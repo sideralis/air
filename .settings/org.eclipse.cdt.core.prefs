@@ -1,0 +1,9 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/BIN_PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/BIN_PATH/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/BIN_PATH/value=/home/gautier/workspace/esp8266_bin
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/SDK_PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/SDK_PATH/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/SDK_PATH/value=/home/gautier/workspace/esp8266_test
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/append=true
+environment/project/cdt.managedbuild.toolchain.gnu.cross.base.2106529866/appendContributed=true
