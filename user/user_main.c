@@ -24,9 +24,21 @@
 
 #include "esp_common.h"
 #include "uart.h"
-#include "lwip/sockets.h"
-
 #include "espconn.h"
+
+#include "lwip/sockets.h"
+#include "freertos/queue.h"
+
+/* Defines */
+#define AIR_VERSION	"0.0.1"
+
+/* Prototypes */
+char *create_page(void);
+
+/* Global variables */
+xQueueHandle wifi_scan_queue;
+
+/* Functions */
 
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
@@ -84,137 +96,126 @@ uint32 user_rf_cal_sector_set(void) {
  *******************************************************************************/
 void ICACHE_FLASH_ATTR
 user_set_softap_config(void) {
+	int ret;
 	struct softap_config *config = (struct softap_config *) zalloc(
 			sizeof(struct softap_config)); // initialization
 
-	wifi_softap_get_config(config); // Get config first.
+	ret = wifi_softap_get_config(config); // Get config first.
+
+	if (ret == 0) {
+		os_printf("ERR: Could not get softap config!\n");
+		return;
+	}
 
 	memset(config->ssid, 0, 32);
 	memset(config->password, 0, 64);
 	memcpy(config->ssid, "ESP8266", 7);
-	memcpy(config->password, "12345678", 8);
-	config->authmode = AUTH_WPA_WPA2_PSK;
-	config->ssid_len = 0; // or its actual length
-	config->max_connection = 4; // how many stations can connect to ESP8266 softAP at most.
+	//memcpy(config->password, "12345678", 8);	// No password as open wifi
+	config->authmode = AUTH_OPEN;
+	config->ssid_len = 7; // or its actual length
+	config->max_connection = 4; // how many stations can connect to ESP8266 softAP at most (4 is max)
 
-	wifi_softap_set_config(config); // Set ESP8266 softap config
+	ret = wifi_softap_set_config(config); // Set ESP8266 softap config
+
+	if (ret == 0) {
+		os_printf("ERR: Could not set softap config!\n");
+		return;
+	}
 
 	free(config);
 
 }
-#define	HTTPD_SERVER_PORT	1002
-#define MAX_CONN			32
 
-void tcp_server(void *param) {
-	int32 listenfd;
-	int32 ret;
-	struct sockaddr_in server_addr, remote_addr;
-	int stack_counter = 0;
+// Function which is called when wifi scan is completed
+void scan_done(void *arg, STATUS status) {
+	uint8 ssid[33];
+	char temp[128];
+	struct bss_info *wifi_scan;
+	signed portBASE_TYPE ret;
 
-	/* Construct local address structure */
-	memset(&server_addr, 0, sizeof(server_addr)); /* Zero out structure */
-	server_addr.sin_family = AF_INET; /* Internet address family */
-	server_addr.sin_addr.s_addr = INADDR_ANY; /* Any incoming interface */
-	server_addr.sin_len = sizeof(server_addr);
-	server_addr.sin_port = htons(HTTPD_SERVER_PORT); /* Local port */
+	// DBG
+	unsigned long nbTask;
+	void *h;
+	nbTask = uxTaskGetNumberOfTasks();
+	os_printf("DBG_scan: Nb of tasks = %d\n",nbTask);
+	h = xTaskGetCurrentTaskHandle();
+	os_printf("DBG_scan: handle = %p\n",h);
+	// END DBG
 
-	/* Create socket for incoming connections */
-	do {
-		listenfd = socket(AF_INET, SOCK_STREAM, 0);
-		if (listenfd == -1) {
-			printf("ESP8266 TCP server ask > socket error\n");
-			vTaskDelay(1000 / portTICK_RATE_MS);
+	if (status == OK) {
+		struct bss_info *bss_link = (struct bss_info *) arg;
+		ret = xQueueReset(wifi_scan_queue);
+		if (ret == pdFAIL) {
+			// Queue is being read so let's wait for next scan
+			os_printf("WAR: Trying to reset queue while being used!\n");
+			return;
 		}
-	} while (listenfd == -1);
+		while (bss_link != NULL) {
+			// Store data received in a table
+			wifi_scan = malloc(sizeof(struct bss_info));
+			if (wifi_scan == 0) {
+				os_printf("ERR: can not allocate memory to store scanned wifi!\n");
+				return;
+			}
+			memset(wifi_scan,0,sizeof(struct bss_info));
+			// - get name
+			if (strlen(bss_link->ssid) <= 32)
+				memcpy(wifi_scan->ssid, bss_link->ssid, strlen(bss_link->ssid));
+			else
+				memcpy(wifi_scan->ssid, bss_link->ssid, 32);
+			// - get mode
+			wifi_scan->authmode = bss_link->authmode;
+			// - get rssi
+			wifi_scan->rssi = bss_link->rssi;
+			// - Set next
+			wifi_scan->next.stqe_next = NULL;
 
-	printf("ESP8266 TCP server task > create socket: %d\n", listenfd);
+			ret = xQueueSend(wifi_scan_queue, &wifi_scan, 0); // 0 = Don't wait if queue is full
+			if (ret != pdPASS) {
+				os_printf("WARNING: Problem when queuing scanned wifi!\n");
+			}
 
-	/* Bind to the local port */
-	do {
-		ret = bind(listenfd, (struct sockaddr * ) &server_addr,
-				sizeof(server_addr));
-		if (ret != 0) {
-			printf("ESP8266 TCP server task > bind fail\n");
-			vTaskDelay(1000 / portTICK_RATE_MS);
+			printf("(%d,\"%s\",%d,\""MACSTR"\",%d)\r\n",
+			bss_link->authmode, wifi_scan->ssid, bss_link->rssi,
+			MAC2STR(bss_link->bssid), bss_link->channel);
+			bss_link = bss_link->next.stqe_next;
 		}
-	} while (ret != 0);
-	printf("ESP8266 TCP server task > port: %d\n", ntohs(server_addr.sin_port));
-	do {
-		/*	Listen	to	the	local	connection	*/
-		ret = listen(listenfd, MAX_CONN);
-		if (ret != 0) {
-			printf("ESP8266 TCP server task > failed to set listen queue!\n");
-			vTaskDelay(1000 / portTICK_RATE_MS);
-		}
-
-	} while (ret != 0);
-
-	printf("ESP8266 TCP server task > listen ok\n");
-
-	int32 client_sock;
-	int32 len = sizeof(struct sockaddr_in);
-	int recbytes;
-
-	for (;;) {
-
-		printf("ESP8266 TCP server task > wait client\n");
-
-		/*block here waiting remote connect request*/
-		if ((client_sock = accept(listenfd, (struct sockaddr * ) &remote_addr,
-				(socklen_t * ) &len)) < 0) {
-
-			printf("ESP8266	TCP	server	task	>	accept	fail\n");
-			continue;
-		}
-
-		printf("ESP8266	TCP	server	task	>	Client	from	%s	%d\n",
-				inet_ntoa(remote_addr.sin_addr), htons(remote_addr.sin_port));
-
-		char *recv_buf = (char *) zalloc(128);
-
-		while ((recbytes = read(client_sock, recv_buf, 128)) > 0) {
-			recv_buf[recbytes] = 0;
-			printf(
-					"ESP8266 TCP server task > read data success %d!\nESP8266 TCP server task > %s\n",
-					recbytes, recv_buf);
-		}
-
-		free(recv_buf);
-
-		if (recbytes <= 0) {
-			printf("ESP8266 TCP server task > read data fail!\n");
-			close(client_sock);
-		}
+	} else {
+		printf("scan fail !!!\r\n");
 	}
 }
 
-void task1(void *param) {
-	os_printf("Welcome to task 1!\n");
-	int j, i = 0;
+// Task to scan nearby wifi
+void task_wifi_scan(void *param) {
+	unsigned long nbTask;
+	void *h;
+
+	os_printf("Welcome to task wifi scan!\n");
 	for (;;) {
-		os_printf("-- %d\n", i++);
-		for (j = 0; j < 25; j++)
-			os_delay_us(40000);
+		wifi_station_scan(NULL, scan_done);
+		os_printf("Waiting 10s before new scan ...\n");
+
+		// DBG
+		nbTask = uxTaskGetNumberOfTasks();
+		os_printf("DBG_scan_task: Nb of tasks = %d\n",nbTask);
+		h = xTaskGetCurrentTaskHandle();
+		os_printf("DBG_scan_task: handle = %p\n",h);
+		// END DBG
+
+		vTaskDelay(10000 / portTICK_RATE_MS);		// Wait 10s
 	}
 	vTaskDelete(NULL);
 }
+
 // ------------------------------
 // --------- TCP SERVER ---------
 // ------------------------------
 
-static const char html_fmt[128] ICACHE_RODATA_ATTR = "HTTP/1.1 200 OK\r\n"
-		"Content-length: %d\r\n"
-		"Content-Type: text/html\r\n"
-		"\r\n"
-		"%s";
-
-static const char html_data[64] ICACHE_RODATA_ATTR
-		= "<html><body><h1>Hello Bernard</h1></body></html>";
 
 LOCAL struct espconn esp_conn;
 LOCAL esp_tcp esptcp;
 
-#define SERVER_LOCAL_PORT   1112
+#define SERVER_LOCAL_PORT   80
 
 /******************************************************************************
  * FunctionName : tcp_server_sent_cb
@@ -273,6 +274,7 @@ tcp_server_recon_cb(void *arg, sint8 err) {
 
 LOCAL void tcp_server_multi_send(void) {
 	struct espconn *pesp_conn = &esp_conn;
+	char *m;
 
 	remot_info *premot = NULL;
 	uint8 count = 0;
@@ -292,29 +294,13 @@ LOCAL void tcp_server_multi_send(void) {
 					premot[count].remote_ip[0], premot[count].remote_ip[1],
 					premot[count].remote_ip[2], premot[count].remote_ip[3]);
 
-			char *fmt, *data, *m;
-			int datasize = sizeof(html_data);
-			int fmtsize = sizeof(html_fmt);
-
-			m = (char *) malloc(1024);
-			fmt = (char *) malloc(fmtsize);
-			data = (char *) malloc(datasize);
-			if (m == 0 || fmt == 0 || data == 0) {
-				os_printf("Cannot allocate memory to send html answer!\n");
-				return;
-			}
-			system_get_string_from_flash(html_data, data, datasize);
-			system_get_string_from_flash(html_fmt, fmt, fmtsize);
-
-			sprintf(m, fmt, strlen(data), data);
+			m = create_page();
 
 			os_printf("DATA = %s\n", m);
 
 			espconn_send(pesp_conn, m, strlen(m));
 
 			free(m);
-			free(fmt);
-			free(data);
 		}
 	}
 }
@@ -357,6 +343,13 @@ user_tcpserver_init(uint32 port) {
 	os_printf("espconn_accept [%d] !!! \r\n", ret);
 
 }
+void ICACHE_FLASH_ATTR create_task_wifi_scan(void) {
+	if (wifi_get_opmode() == SOFTAP_MODE) {
+		os_printf("SoftAP mode is enabled. Enable station mode to scan...\r\n");
+		return;
+	}
+	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
+}
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -366,31 +359,33 @@ user_tcpserver_init(uint32 port) {
 void user_init(void) {
 
 	// Reconfigure UART to 115200 bauds
-	UART_ConfigTypeDef uart_config;
-	uart_config.baud_rate = BIT_RATE_115200;
-	uart_config.data_bits = UART_WordLength_8b;
-	uart_config.parity = USART_Parity_None;
-	uart_config.stop_bits = USART_StopBits_1;
-	uart_config.flow_ctrl = USART_HardwareFlowControl_None;
-	uart_config.UART_RxFlowThresh = 120;
-	uart_config.UART_InverseMask = UART_None_Inverse;
-	UART_ParamConfig(UART0, &uart_config);
+	uart_init_new();
 
 	os_printf("SDK version:%s\n", system_get_sdk_version());
 	os_printf("ESP8266	chip	ID:0x%x\n", system_get_chip_id());
-	os_printf("AIR\n");
+	os_printf("AIR version: " AIR_VERSION " \n");
+
+	// Create queues
+	wifi_scan_queue = xQueueCreate( 10, sizeof(struct bss_info *) );
 
 	//Set softAP + station mode
-	wifi_set_opmode_current(SOFTAP_MODE);
+	wifi_set_opmode_current(STATIONAP_MODE);
 
 	// ESP8266 softAP set config.
 	user_set_softap_config();
+
+	// Wait for end of init before scanning nearby wifi
+	if (wifi_get_opmode() == SOFTAP_MODE) {
+		os_printf("SoftAP mode is enabled. Enable station mode to scan...\r\n");
+		return;
+	}
 
 	// Start TCP server
 	espconn_init();
 	user_tcpserver_init(SERVER_LOCAL_PORT);
 
-//   xTaskCreate(task1, "Task1", 256, NULL, 2, NULL);
-//   xTaskCreate(tcp_server, "TCPServer", 256, NULL, 2, NULL);
+	// Start task wifi scan
+	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
+
 }
 
