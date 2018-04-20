@@ -34,6 +34,8 @@
 
 /* Prototypes */
 char *create_page(void);
+void task_sds011(void *);
+
 
 /* Global variables */
 xQueueHandle wifi_scan_queue;
@@ -385,7 +387,10 @@ void user_init(void) {
 	user_tcpserver_init(SERVER_LOCAL_PORT);
 
 	// Start task wifi scan
-	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
+//	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
+
+	// Start task sds011
+	xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 }
 
