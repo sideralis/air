@@ -49,38 +49,48 @@ static const char wifi_authmode[AUTH_MAX][16] ICACHE_RODATA_ATTR = {
 		"open", "wep", "wpa_psk", "wpa2_psk", "wpa_wpa2_psk"
 };
 
+#define MAX_INFO_SIZE 64
+
 /* Functions */
 char *create_wifi_list(void) {
 	signed portBASE_TYPE ret;
+
 	struct bss_info *wifi_scan;
-	char (*wifi_info)[64];									// FIXME: hard coded values 10 x 64
+	char (*wifi_info)[MAX_INFO_SIZE];
 	int wifi_count = 0;
-	char (*wifi)[16];										// FIXME: hard coded values AUTH_MAX x 16
+	char (*wifi)[16];															// FIXME: hard coded values AUTH_MAX x 16
 	int i;
 
-	wifi = (char (*)[16])malloc(AUTH_MAX*16);				// FIXME: hard coded values!
-	wifi_info = (char (*)[64])malloc(10*64);				// FIXME: hard coded values!
+	wifi = (char (*)[16])malloc(AUTH_MAX*16);									// FIXME: hard coded values!
+	wifi_info = (char (*)[MAX_INFO_SIZE])malloc(10*MAX_INFO_SIZE);				// FIXME: hard coded values!
 	if (wifi == 0 || wifi_info == 0) {
 		os_printf("Cannot allocate memory to send html answer!\n");
 		return 0;
 	}
 	system_get_string_from_flash(wifi_authmode, wifi, AUTH_MAX*16);
 
+	/* Loop to get all wifi networks and fill the wifi_info table */
 	do {
 		ret = xQueueReceive(wifi_scan_queue, &wifi_scan, 0);
 		if (ret == errQUEUE_EMPTY)
-			break;
+			break;		// Exit from loop if no more network
 		sprintf(wifi_info[wifi_count++],"<p>%s %d %d</p>\r\n",wifi_scan->ssid, wifi_scan->authmode, wifi_scan->rssi);	// FIXME: check authmode is in range
 		free(wifi_scan);		// Release the data as we don't need them anymore
 	} while (wifi_count<10);
-	os_printf("__DBG__ %d\n",wifi_count);
+
+	os_printf("__DBG__ %d\n",wifi_count);	/* DBG */
+
+	/* Complete the fill_info table */
 	while(wifi_count<10) {
 		strcpy(wifi_info[wifi_count++],"<p>------</p>\r\n");
 	}
+	/* DBG */
 	os_printf("__DBG__ %d\n",wifi_count);
 	for (i=0;i<10;i++) {
 		os_printf("__DBG__ %s\n",wifi_info[i]);
 	}
+	/* DBG END */
+
 	char *data_1, *data_2, *data_wifi;
 	int data_1_size = GET_ALIGN_STRING_LEN(html_data_1);
 	int data_2_size = GET_ALIGN_STRING_LEN(html_data_2);
@@ -112,6 +122,9 @@ char *create_wifi_list(void) {
 	return data_wifi;
 }
 
+/**
+ * Called by tcp server
+ */
 char *create_page(void) {
 
 	char *fmt, *cfg, *data;
@@ -126,6 +139,7 @@ char *create_page(void) {
 	os_printf("DBG_html: handle = %p\n",h);
 	// END DBG
 
+	// Create the
 	int fmtsize = GET_ALIGN_STRING_LEN(html_fmt);
 	int cfgsize = GET_ALIGN_STRING_LEN(html_cfg);
 

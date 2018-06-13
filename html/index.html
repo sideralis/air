@@ -1,20 +1,46 @@
 <html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="20">
+
 <head>
     <title>AIR</title>
-    <meta http-equiv="refresh" content="10">
 </head>
 
-<body>
+<body style="background-color:skyblue;">
 <article>
     <section>
+        <h1>Pollution</h1>
+	</section>
+	
+	<canvas id="measures" width="512" height="512" style="border:1px solid #d3d3d3;">
+	Your browser does not support the HTML5 canvas tag.</canvas>
+	<script>
+	var c = document.getElementById("measures");
+	var ctx = c.getContext("2d");
+	ctx.moveTo(0,0);
+	ctx.lineTo(0,512);
+	ctx.lineTo(512,512);
+	ctx.stroke();
+	</script>
+
+
+    <section>
         <h1>Network</h1>
-            <p>network1</p>
-            <p>network2</p>
+			Choose a network
+			<select name="network">
+				<option value="Freebox-8BED1A">Volvo</option>
+				<option value="FreeWifi">Saab</option>
+				<option value="FreeWifi_secure">Fiat</option>
+			</select>
+			And enter its password
+			<input name="password" type="password">
+			<br>
+			<input type="submit" value="Connect">
     </section>
-    <footer>
-        <ul>
-            <li>@BG</li>
-        </ul>
+
+    <footer style="background-color:white;">
+		<p>v0.1 30/5/2018</p>
     </footer>
 </article>
 </body>

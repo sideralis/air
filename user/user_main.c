@@ -25,9 +25,15 @@
 #include "esp_common.h"
 #include "uart.h"
 #include "espconn.h"
+#include "espressif/esp8266/ets_sys.h"
 
 #include "lwip/sockets.h"
+//#include "lwip/mdns.h"
 #include "freertos/queue.h"
+
+#include <../esp-gdbstub/gdbstub.h>
+
+#include "gpio.h"
 
 /* Defines */
 #define AIR_VERSION	"0.0.1"
@@ -36,15 +42,14 @@
 char *create_page(void);
 void task_sds011(void *);
 
-
 /* Global variables */
-xQueueHandle wifi_scan_queue;
+xQueueHandle wifi_scan_queue;				/* Queue used to store wifi scan results */
 
 /* Functions */
 
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
- * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
+ * Description  : SDK just reversed 4 sectors, used for rf init data and parameters.
  *                We add this function to force users to set rf cal sector, since
  *                we don't know which sector is free in user's application.
  *                sector map for last several sectors : ABCCC
@@ -96,19 +101,21 @@ uint32 user_rf_cal_sector_set(void) {
  * Parameters   : none
  * Returns      : none
  *******************************************************************************/
-void ICACHE_FLASH_ATTR
-user_set_softap_config(void) {
+void ICACHE_FLASH_ATTR user_set_softap_config(void) {
 	int ret;
 	struct softap_config *config = (struct softap_config *) zalloc(
 			sizeof(struct softap_config)); // initialization
+    struct ip_info ip;
 
-	ret = wifi_softap_get_config(config); // Get config first.
+	// Get config
+	ret = wifi_softap_get_config(config);
 
 	if (ret == 0) {
 		os_printf("ERR: Could not get softap config!\n");
 		return;
 	}
 
+	// Modify it
 	memset(config->ssid, 0, 32);
 	memset(config->password, 0, 64);
 	memcpy(config->ssid, "ESP8266", 7);
@@ -117,18 +124,47 @@ user_set_softap_config(void) {
 	config->ssid_len = 7; // or its actual length
 	config->max_connection = 4; // how many stations can connect to ESP8266 softAP at most (4 is max)
 
+	// Save it
+	ETS_UART_INTR_DISABLE();
 	ret = wifi_softap_set_config(config); // Set ESP8266 softap config
+	ETS_UART_INTR_ENABLE();
 
 	if (ret == 0) {
 		os_printf("ERR: Could not set softap config!\n");
 		return;
 	}
 
+	// Check DHCP is started
+	if (wifi_softap_dhcps_status() != DHCP_STARTED) {
+		os_printf("ERR: DHCP not started, starting...\n");
+		if (!wifi_softap_dhcps_start()) {
+			os_printf("ERR: wifi_softap_dhcps_start failed!\n");
+		}
+	}
+
+    // Check IP config
+    if (wifi_get_ip_info(SOFTAP_IF, &ip)) {
+        if (ip.ip.addr == 0x00000000) {
+            // Invalid config
+        	os_printf("ERR: IP config Invalid resetting...\n");
+            //192.168.244.1 , 192.168.244.1 , 255.255.255.0
+//            ret = softAPConfig(0x01F4A8C0, 0x01F4A8C0, 0x00FFFFFF);
+//            if(!ret) {
+//            	os_printf("ERR: softAPConfig failed!\n");
+//                ret = false;
+//        	}
+        }
+    } else {
+    	os_printf("ERR: wifi_get_ip_info failed!\n");
+    }
+
 	free(config);
 
 }
 
-// Function which is called when wifi scan is completed
+/**
+ * Function which is called when wifi scan is completed
+ */
 void scan_done(void *arg, STATUS status) {
 	uint8 ssid[33];
 	char temp[128];
@@ -178,8 +214,8 @@ void scan_done(void *arg, STATUS status) {
 			}
 
 			printf("(%d,\"%s\",%d,\""MACSTR"\",%d)\r\n",
-			bss_link->authmode, wifi_scan->ssid, bss_link->rssi,
-			MAC2STR(bss_link->bssid), bss_link->channel);
+					bss_link->authmode, wifi_scan->ssid, bss_link->rssi,
+					MAC2STR(bss_link->bssid), bss_link->channel);
 			bss_link = bss_link->next.stqe_next;
 		}
 	} else {
@@ -352,6 +388,32 @@ void ICACHE_FLASH_ATTR create_task_wifi_scan(void) {
 	}
 	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
 }
+
+
+
+//void IRAM_ATTR user_mdns_config()
+//{
+//	struct ip_info ipconfig;
+//	struct mdns_info *info;
+//
+//
+////	wifi_get_ip_info(STATION_IF, &ipconfig);
+//
+//	info = (struct mdns_info *)zalloc(sizeof(struct mdns_info));
+//	if (info == 0)
+//		return;
+//
+//	info->host_name = "air";
+//	info->ipAddr = ipconfig.ip.addr;			// ESP8266 Station IP
+//	info->server_name = "iot";
+//	info->server_port = 8080;
+//	info->txt_data[0] = "version = now";
+//	info->txt_data[1] = "user1 = data1";
+//	info->txt_data[2] = "user2 = data2";
+//
+////	espconn_mdns_init(info);
+//}
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -367,14 +429,17 @@ void user_init(void) {
 	os_printf("ESP8266	chip	ID:0x%x\n", system_get_chip_id());
 	os_printf("AIR version: " AIR_VERSION " \n");
 
+#ifdef DEBUG
+	gdbstub_init();
+#endif
+
+//	user_mdns_config();
+
 	// Create queues
 	wifi_scan_queue = xQueueCreate( 10, sizeof(struct bss_info *) );
 
-	//Set softAP + station mode
-	wifi_set_opmode_current(STATIONAP_MODE);
-
-	// ESP8266 softAP set config.
-	user_set_softap_config();
+	// Set softAP + station mode
+	wifi_set_opmode_current(/*SOFTAP_MODE*/STATIONAP_MODE);
 
 	// Wait for end of init before scanning nearby wifi
 	if (wifi_get_opmode() == SOFTAP_MODE) {
@@ -382,15 +447,22 @@ void user_init(void) {
 		return;
 	}
 
+	// ESP8266 softAP set config.
+	user_set_softap_config();
+
 	// Start TCP server
 	espconn_init();
 	user_tcpserver_init(SERVER_LOCAL_PORT);
 
+
+//	user_mdns_config();
+
 	// Start task wifi scan
 //	xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
+	create_task_wifi_scan();
 
 	// Start task sds011
-	xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+//	xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 }
 

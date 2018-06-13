@@ -29,5 +29,10 @@
 			<type>2</type>
 			<location>/home/gautier/git/ESP8266_RTOS_SDK</location>
 		</link>
+		<link>
+			<name>esp8266_bin</name>
+			<type>2</type>
+			<location>/home/gautier/workspace/esp8266_bin</location>
+		</link>
 	</linkedResources>
 </projectDescription>
