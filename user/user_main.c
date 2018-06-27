@@ -52,10 +52,13 @@
 void task_sds011(void *);
 void task_led(void *);
 void task_wifi_scan(void *);
+void softap_task(void *);
 
 void user_tcpserver_init(uint32 );
 void user_set_softap_config();
 
+/* Global */
+SLIST_HEAD(router_info_head, router_info) router_data;
 
 /* Functions */
 
@@ -107,7 +110,7 @@ uint32 user_rf_cal_sector_set(void) {
 	return rf_cal_sec;
 }
 
-void ICACHE_FLASH_ATTR task_main(void *param)
+void task_main(void *param)
 {
 	int nb_ap;								// Nb of ap air can connect to
 	struct station_config config[5];		// Information on these ap
@@ -117,7 +120,6 @@ void ICACHE_FLASH_ATTR task_main(void *param)
 	xTaskHandle handle_task_wifi;
 	struct station_config station_info;
 
-	SLIST_HEAD(router_info_head, router_info) router_list;
     struct router_info *info = NULL;
 
 	while(1) {
@@ -125,7 +127,7 @@ void ICACHE_FLASH_ATTR task_main(void *param)
 		//wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);
 		printf("DBG: Data on station = %d\n", nb_ap);
-		if (nb_ap == 0) {
+		if (nb_ap < 50) {			// FIXME: only for debug, should be == 0
 			// We have never connected to any network, let's scan for wifi
 			// Start task wifi scan
 			xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, &handle_task_wifi);
@@ -135,7 +137,7 @@ void ICACHE_FLASH_ATTR task_main(void *param)
 			led_setup.state = LED_BLINK;
 			xQueueSend(led_queue, &led_setup, 0);
 
-			ret = xQueueReceive(wifi_scan_queue, &router_list, 10000 / portTICK_RATE_MS);			// Timeout after 10s
+			ret = xQueueReceive(wifi_scan_queue, &router_data, 10000 / portTICK_RATE_MS);			// Timeout after 10s
 			if (ret == errQUEUE_EMPTY) {
 				printf("DBG: No wifi dectected!\n");
 				// No wifi detected
@@ -150,24 +152,32 @@ void ICACHE_FLASH_ATTR task_main(void *param)
 				xQueueSend(led_queue, &led_setup, 0);
 
 				// Display networks
-				SLIST_FOREACH(info, &router_list, next) {
+				SLIST_FOREACH(info, &router_data, next) {
 					printf("INFO: Network info: %s %d %d\n", info->ssid, info->rssi, info->authmode);
 				}
 
-				// Move to AP
-//				ret = wifi_set_opmode_current(SOFTAP_MODE);
-//				if (!ret)
-//					printf("ERR: Failed to switch to SOFTAP_MODE!\n");
-//				user_set_softap_config();
+				// Move to AP: already done as we started as both
 
 				// Start TCP server
-//				user_tcpserver_init(SERVER_LOCAL_PORT);
+				os_printf("DBG: Start TCP server\n");
+				user_tcpserver_init(SERVER_LOCAL_PORT);
 
 				// Wait for user network selection
 				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);
+
+				// User has now selected network, let's try to connect to it:
+				os_printf("DBG: Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
+				convert_UTF8_string(station_info.ssid);
+				convert_UTF8_string(station_info.password);
+				os_printf("DBG: After UTF8 conversion - to: %s with password: %s\n",station_info.ssid, station_info.password);
+
+				wifi_station_set_config(&station_info);
+				wifi_set_event_handler_cb(wifi_handle_event_cb);
+				wifi_station_connect();
+				os_printf("DBG: We should be connected now\n");
 			}
 		} else {
-
+			printf("DBG: We have already connected to a network. Trying again...\n");
 		}
 		vTaskSuspend(xTaskGetCurrentTaskHandle());
 	}
@@ -248,7 +258,7 @@ void ICACHE_FLASH_ATTR task_main(void *param)
  * Parameters   : none
  * Returns      : none
  *******************************************************************************/
-void IRAM_ATTR user_set_softap_config(void) {
+void user_set_softap_config(void) {
 	int ret;
 	struct softap_config *config = (struct softap_config *) zalloc(sizeof(struct softap_config)); // initialization
     struct ip_info ip;
@@ -356,17 +366,14 @@ void user_init(void) {
 	os_printf("AIR version: " AIR_VERSION " \n");
 
 #ifdef DEBUG
-	//gdbstub_init();
+//	gdbstub_init();
 #endif
 
 	// Create queues
 	user_create_queues();
 
-	// Set Station mode first
-	wifi_set_opmode_current(STATION_MODE/*SOFTAP_MODE*//*STATIONAP_MODE*/);
-
-	// ESP8266 softAP set config.
-//	user_set_softap_config();
+	// Start SATIONAP mode for scanning and for connection
+   xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
 
 	// Start TCP server
 	espconn_init();
@@ -378,7 +385,7 @@ void user_init(void) {
 	xTaskCreate(task_led, "led driver", 256, NULL, 2, NULL);
 
 	// Main task - state machine
-	xTaskCreate(task_main, "main", 256, NULL, 2, NULL);
+	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
 
 
 	// Start task sds011

@@ -7,7 +7,9 @@
 
 #include "esp_common.h"
 #include "espconn.h"
+#include "freertos/queue.h"
 
+#include "user_queue.h"
 
 LOCAL struct espconn esp_conn;
 LOCAL esp_tcp esptcp;
@@ -21,8 +23,8 @@ char *create_page(void);
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR
-tcp_server_sent_cb(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_server_sent_cb(void *arg)
+{
 	//data sent successfully
 
 	os_printf("tcp sent cb \r\n");
@@ -34,14 +36,46 @@ tcp_server_sent_cb(void *arg) {
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR
-tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length) {
+static void ICACHE_FLASH_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
+{
+	struct station_config station_info;
+	char *p1, *p2, *p3;
 	//received some data from tcp connection
 
 	struct espconn *pespconn = arg;
 	os_printf("tcp recv : %s \r\n", pusrdata);
 
-	espconn_sent(pespconn, pusrdata, length);
+	// Here we get the data back, so let's find the network and the password.
+	// === wifi network ===
+	p1 = strstr(pusrdata, "network");
+
+	if (p1 == 0)
+		return;
+
+	memset(&station_info, 0, sizeof(station_info));  //set value of config from address of &config to width of size to be value '0'
+
+	for (; *p1 != '='; p1++)
+		;						// FIXME: may go too far
+	p1++;
+	p2 = p1;
+	for (; *p1 != '&'; p1++)
+		;						// FIXME: may go too far
+	p3 = p1;
+	memcpy(station_info.ssid, p2, p3 - p2);
+	station_info.ssid[p3 - p2] = 0;			// FIXME: check if needed
+	// === password ===
+	for (; *p1 != '='; p1++)
+		;						// FIXME: may go too far
+	p1++;
+	p2 = p1;
+	for (; *p1 != 0; p1++)
+		;						// FIXME: may go too far
+	p3 = p1;
+	memcpy(station_info.password, p2, p3 - p2);
+	station_info.password[p3 - p2] = 0;		// FIXME: check if needed
+
+	// === Send info for main task ===
+	xQueueSend(network_queue, &station_info, 0);
 }
 
 /******************************************************************************
@@ -50,7 +84,8 @@ tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length) {
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR tcp_server_discon_cb(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_server_discon_cb(void *arg)
+{
 	//tcp disconnect successfully
 
 	os_printf("tcp disconnect succeed !!! \r\n");
@@ -62,13 +97,15 @@ LOCAL void ICACHE_FLASH_ATTR tcp_server_discon_cb(void *arg) {
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR tcp_server_recon_cb(void *arg, sint8 err) {
+static void ICACHE_FLASH_ATTR tcp_server_recon_cb(void *arg, sint8 err)
+{
 	//error occured , tcp connection broke.
 
 	os_printf("reconnect callback, error code %d !!! \r\n", err);
 }
 
-LOCAL void tcp_server_multi_send(void) {
+static void tcp_server_multi_send(void)
+{
 	struct espconn *pesp_conn = &esp_conn;
 	char *m;
 
@@ -85,10 +122,8 @@ LOCAL void tcp_server_multi_send(void) {
 			pesp_conn->proto.tcp->remote_ip[2] = premot[count].remote_ip[2];
 			pesp_conn->proto.tcp->remote_ip[3] = premot[count].remote_ip[3];
 
-			os_printf("DEBUG(%d): S=%d P=%d IP1=%d IP2=%d IP3=%d IP4=%d\n",
-					count, premot[count].state, premot[count].remote_port,
-					premot[count].remote_ip[0], premot[count].remote_ip[1],
-					premot[count].remote_ip[2], premot[count].remote_ip[3]);
+			os_printf("DEBUG(%d): S=%d P=%d IP1=%d IP2=%d IP3=%d IP4=%d\n", count, premot[count].state, premot[count].remote_port, premot[count].remote_ip[0],
+					premot[count].remote_ip[1], premot[count].remote_ip[2], premot[count].remote_ip[3]);
 
 			m = create_page();
 
@@ -107,7 +142,8 @@ LOCAL void tcp_server_multi_send(void) {
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR tcp_server_listen(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_server_listen(void *arg)
+{
 	struct espconn *pesp_conn = arg;
 	os_printf("tcp_server_listen !!! \r\n");
 
@@ -125,7 +161,8 @@ LOCAL void ICACHE_FLASH_ATTR tcp_server_listen(void *arg) {
  * Parameters   : port -- server port
  * Returns      : none
  *******************************************************************************/
-void ICACHE_FLASH_ATTR user_tcpserver_init(uint32 port) {
+void ICACHE_FLASH_ATTR user_tcpserver_init(uint32 port)
+{
 	esp_conn.type = ESPCONN_TCP;
 	esp_conn.state = ESPCONN_NONE;
 	esp_conn.proto.tcp = &esptcp;

@@ -22,10 +22,13 @@ struct router_info {
     u8  iv[8];
     u8  iv_check;
     u8	rssi;
-};
+};		// TODO clean structure, some fields are unused
 
 /* Status used to indicate if we continue scanning or if we stop */
 #define WIFI_DETECTED 			1
 #define WIFI_NOT_DETECTED		0
+
+/* Prototypes */
+void wifi_handle_event_cb(System_Event_t *);
 
 #endif /* INCLUDE_USER_WIFI_H_ */

@@ -23,7 +23,8 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS=    \
 	user    \
 	esp-gdbstub \
-	driver
+	driver \
+	library
 
 endif # } PDIR
 
@@ -40,7 +41,8 @@ endif
 COMPONENTS_eagle.app.v6 = \
 	user/libuser.a  \
 	esp-gdbstub/libgdbstub.a \
-	driver/libdriver.a
+	driver/libdriver.a \
+	library/libgeneral.a
 
 LINKFLAGS_eagle.app.v6 = \
 	-L$(SDK_PATH)/lib \
