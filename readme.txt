@@ -3,24 +3,27 @@ Air firmware
 ===========
 == FILES ==
 ===========
+user/user_html.c: 	Generate the web page to display sensors data
+					display_xxx_page() is called by tcp server in order to display a page
+
+user/user_led.c:	Driver for red, green et blue leds
+
 user/user_main.c: 	Entry point. Set esp8266 in Station and softAP mode.
+					Start main state machine
 					Start TCP Server
 					Start a task to capture data from SDS011
 					Start a task to scan wifi networks
 
-user/user_html.c: 	Generate the web page to display sensors data
-					create_page() is called by tcp server in order to display a page
+user/user_queue.c:	To create queues which are used for inter tasks communication
 										
 user/user_sds011.c:	Driver for SDS011 (PM2.5 & PM10 sensor)
 					Use GPIO4 (RX) and GPIO5 (TX) to connect to SDS011 uart port
 					
-user/user_led.c:	Driver for red, green et blue leds
-
-user/user_wifi.c:	Task for wifi scan
-
 user/user_tcp_server.c:	TCP server
 
-user/user_queue.c:	To create queues which are used for inter tasks communication
+user/user_wifi.c:	Task for wifi scan and setuping wifi
+
+library/utf8.c:		To convert UTF8 char to ASCII char (used when converting password with special characters)
 
 =================
 == COMPILATION ==
@@ -61,11 +64,11 @@ Data are then read and for each network a message is queued.
 
 ## Main ##
 = Power on
+= Configure as station + AP
 = Do we have connection information?
 				YES												NO (1)														NONE
-Configure as Station								Configure as Station												Configure as Station
 Connect to internet	+ led blue blinking				Scan wifi nearby + led BLUE blinking								Scan wifi nearby + led BLUE blinking
-Can connect?										Configure as AP + led BLUE blinking (quicker?)						Configure as AP + led BLUE blinking (quicker?)
+Can connect?										 						
 	YES					NO							Start TCP server + led BLUE blinking								Start TCP server + led BLUE blinking
 Start TCP server	Goto to (1)						Wait for user to connect to AP										Wait for user to connect to AP
 Display data + led									(3) Display all wifi user can connect to or none if none			Wifi available ?
@@ -76,6 +79,6 @@ Display data + led									(3) Display all wifi user can connect to or none if n
 ===========
 == TO DO ==
 ===========
-1- Display wifi around
+
 2- Display measurements
 3- Send measurements to server

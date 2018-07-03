@@ -12,5 +12,6 @@ extern xQueueHandle wifi_scan_queue;
 extern xQueueHandle led_queue;
 extern xQueueHandle network_queue;
 extern xQueueHandle status_scan_queue;
+extern xQueueHandle got_ip_queue;
 
 #endif /* INCLUDE_USER_QUEUE_H_ */

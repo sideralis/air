@@ -57,6 +57,8 @@ void softap_task(void *);
 void user_tcpserver_init(uint32 );
 void user_set_softap_config();
 
+void user_mdns_config();
+
 /* Global */
 SLIST_HEAD(router_info_head, router_info) router_data;
 
@@ -112,6 +114,7 @@ uint32 user_rf_cal_sector_set(void) {
 
 void task_main(void *param)
 {
+	int got_ip;
 	int nb_ap;								// Nb of ap air can connect to
 	struct station_config config[5];		// Information on these ap
 	struct led_info led_setup;
@@ -122,41 +125,29 @@ void task_main(void *param)
 
     struct router_info *info = NULL;
 
+	// Let's blink while we are not fully connected
+	led_setup.color_to = LED_BLUE;
+	led_setup.color_from = LED_BLACK;
+	led_setup.state = LED_BLINK;
+	xQueueSend(led_queue, &led_setup, 0);
+	wifi_set_event_handler_cb(wifi_handle_event_cb);
+
 	while(1) {
 		// Get ap info
 		//wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);
 		printf("DBG: Data on station = %d\n", nb_ap);
-		if (nb_ap < 50) {			// FIXME: only for debug, should be == 0
+		if (nb_ap < 500) {		//  FIXME should be == 0
 			// We have never connected to any network, let's scan for wifi
 			// Start task wifi scan
 			xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, &handle_task_wifi);
 
-			led_setup.color_to = LED_BLUE;
-			led_setup.color_from = LED_BLACK;
-			led_setup.state = LED_BLINK;
-			xQueueSend(led_queue, &led_setup, 0);
-
 			ret = xQueueReceive(wifi_scan_queue, &router_data, 10000 / portTICK_RATE_MS);			// Timeout after 10s
 			if (ret == errQUEUE_EMPTY) {
-				printf("DBG: No wifi dectected!\n");
+				os_printf("DBG: No wifi dectected!\n");
 				// No wifi detected
 			} else {
-				printf("DBG: Wifi dectected!\n");
-				// Wifi detected, we move to AP
-
-				// Change LED to indicate we move to next step
-				led_setup.color_to = LED_CYAN;
-				led_setup.color_from = LED_BLUE;
-				led_setup.state = LED_BLINK;
-				xQueueSend(led_queue, &led_setup, 0);
-
-				// Display networks
-				SLIST_FOREACH(info, &router_data, next) {
-					printf("INFO: Network info: %s %d %d\n", info->ssid, info->rssi, info->authmode);
-				}
-
-				// Move to AP: already done as we started as both
+				os_printf("DBG: Wifi dectected!\n");
 
 				// Start TCP server
 				os_printf("DBG: Start TCP server\n");
@@ -166,18 +157,33 @@ void task_main(void *param)
 				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);
 
 				// User has now selected network, let's try to connect to it:
-				os_printf("DBG: Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
 				convert_UTF8_string(station_info.ssid);
 				convert_UTF8_string(station_info.password);
-				os_printf("DBG: After UTF8 conversion - to: %s with password: %s\n",station_info.ssid, station_info.password);
+				os_printf("DBG: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
 
 				wifi_station_set_config(&station_info);
-				wifi_set_event_handler_cb(wifi_handle_event_cb);
 				wifi_station_connect();
+
+				// Wait for connection and ip before going to mDNS
+				ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 				os_printf("DBG: We should be connected now\n");
+//				user_mdns_config();
+
+
 			}
 		} else {
 			printf("DBG: We have already connected to a network. Trying again...\n");
+
+			// Wait for connection and ip before going to mDNS
+			ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
+			os_printf("DBG: We should be connected now\n");
+//			user_mdns_config();
+
+			// Stop blinking to indicate we are connected
+			led_setup.color_to = LED_BLUE;
+			led_setup.state = LED_ON;
+			xQueueSend(led_queue, &led_setup, 0);
+
 		}
 		vTaskSuspend(xTaskGetCurrentTaskHandle());
 	}
@@ -326,7 +332,7 @@ void user_set_softap_config(void) {
  * mDNS configuration
  * Not yet working!!!
  */
-void user_mdns_config()
+void IRAM_ATTR user_mdns_config()
 {
 	struct ip_info ipconfig;
 	struct mdns_info *info;
@@ -334,7 +340,7 @@ void user_mdns_config()
 	wifi_get_ip_info(STATION_IF, &ipconfig);
 
 	if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
-
+		os_printf("DBG: setting up mdns\n");
 		info = (struct mdns_info *)zalloc(sizeof(struct mdns_info));
 		if (info == 0)
 			return;
@@ -356,7 +362,7 @@ void user_mdns_config()
  * Parameters   : none
  * Returns      : none
  *******************************************************************************/
-void user_init(void) {
+void IRAM_ATTR user_init(void) {
 
 	// Reconfigure UART to 115200 bauds
 	uart_init_new();
@@ -387,9 +393,8 @@ void user_init(void) {
 	// Main task - state machine
 	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
 
-
 	// Start task sds011
-	//xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+//	xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 }
 

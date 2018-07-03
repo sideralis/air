@@ -10,6 +10,7 @@
 
 #include "user_queue.h"
 #include "user_wifi.h"
+#include "user_led.h"
 
 SLIST_HEAD(router_info_head, router_info) router_list;
 uint8  current_channel;
@@ -20,7 +21,10 @@ uint16 channel_bits;
  */
 void wifi_handle_event_cb(System_Event_t *evt)
 {
-    printf("event %x\n", evt->event_id);
+	struct led_info led_setup;
+	int got_ip = 0;
+
+	printf("event %x\n", evt->event_id);
 
     switch (evt->event_id) {
         case EVENT_STAMODE_CONNECTED:
@@ -38,11 +42,19 @@ void wifi_handle_event_cb(System_Event_t *evt)
         case EVENT_STAMODE_GOT_IP:
             printf("ip:" IPSTR ",mask:" IPSTR ",gw:" IPSTR, IP2STR(&evt->event_info.got_ip.ip),
                     IP2STR(&evt->event_info.got_ip.mask), IP2STR(&evt->event_info.got_ip.gw));
+            got_ip = 1;
+            xQueueSend(got_ip_queue, &got_ip, 0);
             printf("\n");
             break;
         case EVENT_SOFTAPMODE_STACONNECTED:
             printf("station: " MACSTR "join, AID = %d\n", MAC2STR(evt->event_info.sta_connected.mac),
                     evt->event_info.sta_connected.aid);
+
+            // Stop blinking to indicate we are connected
+			led_setup.color_to = LED_BLUE;
+			led_setup.state = LED_ON;
+			xQueueSend(led_queue, &led_setup, 0);
+
             break;
         case EVENT_SOFTAPMODE_STADISCONNECTED:
             printf("station: " MACSTR "leave, AID = %d\n", MAC2STR(evt->event_info.sta_disconnected.mac),
@@ -142,7 +154,7 @@ void task_wifi_scan(void *param) {
 		wifi_station_scan(NULL, wifi_scan_done);
 		ret = xQueueReceive(status_scan_queue, &scan_status, portMAX_DELAY);			// Wait indefinitely
 		if (scan_status == WIFI_DETECTED)
-			break;
+			break;																		// TODO: We should exit only if we are sure we have found all networks
 	}
 
 	os_printf("DBG: Waiting 10s before terminating wifi scan task\n");

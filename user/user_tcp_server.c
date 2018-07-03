@@ -10,12 +10,15 @@
 #include "freertos/queue.h"
 
 #include "user_queue.h"
+#include "user_html.h"
 
-LOCAL struct espconn esp_conn;
-LOCAL esp_tcp esptcp;
+static struct espconn esp_conn;
+static esp_tcp esptcp;
+
+
+int html_page_state;
 
 /** Prototypes */
-char *create_page(void);
 
 /******************************************************************************
  * FunctionName : tcp_server_sent_cb
@@ -36,46 +39,37 @@ static void ICACHE_FLASH_ATTR tcp_server_sent_cb(void *arg)
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-static void ICACHE_FLASH_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
+static void IRAM_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
-	struct station_config station_info;
-	char *p1, *p2, *p3;
+	struct header_html_recv html_content;
+	char *m;
 	//received some data from tcp connection
 
-	struct espconn *pespconn = arg;
+	struct espconn *pesp_conn = arg;
+
 	os_printf("tcp recv : %s \r\n", pusrdata);
 
-	// Here we get the data back, so let's find the network and the password.
-	// === wifi network ===
-	p1 = strstr(pusrdata, "network");
-
-	if (p1 == 0)
+	// Extract from web page if this is a get or a push and which page is requested
+	if (process_header_recv(pusrdata, &html_content)) {
+		os_printf("ERR: Error in extraction!\n");
 		return;
+	}
 
-	memset(&station_info, 0, sizeof(station_info));  //set value of config from address of &config to width of size to be value '0'
+	if (html_content.get) {
+		os_printf("DBG: A GET request\n");
+		return;
+	}
 
-	for (; *p1 != '='; p1++)
-		;						// FIXME: may go too far
-	p1++;
-	p2 = p1;
-	for (; *p1 != '&'; p1++)
-		;						// FIXME: may go too far
-	p3 = p1;
-	memcpy(station_info.ssid, p2, p3 - p2);
-	station_info.ssid[p3 - p2] = 0;			// FIXME: check if needed
-	// === password ===
-	for (; *p1 != '='; p1++)
-		;						// FIXME: may go too far
-	p1++;
-	p2 = p1;
-	for (; *p1 != 0; p1++)
-		;						// FIXME: may go too far
-	p3 = p1;
-	memcpy(station_info.password, p2, p3 - p2);
-	station_info.password[p3 - p2] = 0;		// FIXME: check if needed
+	if (strcmp(html_content.page,"/wifi.html") == 0) {
+		// Here we get the data back, so let's find the network and the password.
+		process_network_choice(pusrdata);
+		m = display_network_choosen();
+		espconn_send(pesp_conn, m, strlen(m));
+		free(m);
+	} else {
+		display_404();
+	}
 
-	// === Send info for main task ===
-	xQueueSend(network_queue, &station_info, 0);
 }
 
 /******************************************************************************
@@ -125,7 +119,7 @@ static void tcp_server_multi_send(void)
 			os_printf("DEBUG(%d): S=%d P=%d IP1=%d IP2=%d IP3=%d IP4=%d\n", count, premot[count].state, premot[count].remote_port, premot[count].remote_ip[0],
 					premot[count].remote_ip[1], premot[count].remote_ip[2], premot[count].remote_ip[3]);
 
-			m = create_page();
+			m = display_network_choice();
 
 			os_printf("DATA = %s\n", m);
 
