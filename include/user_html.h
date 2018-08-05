@@ -10,7 +10,7 @@
 
 struct header_html_recv {
 	short get;
-	short push;
+	short post;
 	char page[32];
 };
 
@@ -18,5 +18,6 @@ int process_header_recv(char *, struct header_html_recv *);
 char *display_network_choice(void);
 char *display_network_choosen(void);
 char *display_404(void);
+char *html_add_header(char *);
 
 #endif /* INCLUDE_USER_HTML_H_ */

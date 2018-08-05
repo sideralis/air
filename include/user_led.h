@@ -14,6 +14,10 @@ struct led_info {
 	int color_from;					/* The 2nd color target in case of blinking or fading */
 };
 
+/* Type of supported led */
+#define LED_TYPE_RGB	0
+#define LED_TYPE_3CLOR	1
+
 /* Different state of the led */
 #define LED_OFF				0
 #define LED_ON				2

@@ -6,6 +6,7 @@
  */
 #include "esp_common.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "user_wifi.h"
 #include "user_html.h"
@@ -24,7 +25,7 @@ static const char html_fmt[] ICACHE_RODATA_ATTR STORE_ATTR =
 		"Content-length: %d\r\n"
 		"Content-Type: text/html\r\n"
 		"\r\n"
-		"%s%s";
+		"%s";
 
 static const char html_cfg[] ICACHE_RODATA_ATTR STORE_ATTR =
 		"<html>\r\n"
@@ -51,6 +52,9 @@ static const char html_data_2[] ICACHE_RODATA_ATTR STORE_ATTR =
 
 static const char html_choosen[] ICACHE_RODATA_ATTR STORE_ATTR =
 		"<html>\r\n"
+		"  <head>\r\n"
+		"    <meta http-equiv=\"refresh\" content=\"5\""
+		"  </head>\r\n"
 		"  <body>\r\n"
 		"    <p>Trying to connect to network. Please wait...</p>\r\n"
 		"  </body>\r\n"
@@ -75,14 +79,14 @@ int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *conte
 	pGP = strstr(pusrdata,"GET");
 	if (pGP != 0) {
 		content->get = 1;
-		content->push = 0;
+		content->post = 0;
 		pGP += 4;
 	} else {
 		pGP = strstr(pusrdata,"POST");
 		if (pGP == 0)
 			return -1;
 		content->get = 0;
-		content->push = 1;
+		content->post = 1;
 		pGP += 5;
 	}
 	pHTTP = strstr(pusrdata,"HTTP");
@@ -101,6 +105,8 @@ int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *conte
  */
 int IRAM_ATTR process_network_choice(char *pusrdata)
 {
+	// TODO: test with an empty password
+
 	struct station_config station_info;
 	char *p1, *p2, *p3;
 
@@ -126,7 +132,7 @@ int IRAM_ATTR process_network_choice(char *pusrdata)
 		;						// FIXME: may go too far
 	p1++;
 	p2 = p1;
-	for (; *p1 != 0; p1++)
+	for (; *p1 != 0 && *p1 != '&'; p1++)
 		;						// FIXME: may go too far
 	p3 = p1;
 	memcpy(station_info.password, p2, p3 - p2);
@@ -180,7 +186,26 @@ static char *create_wifi_list(void)
 	return data;
 }
 
+IRAM_ATTR char *html_add_header(char *page)
+{
+	char *fmt;
+	char *m;
 
+	int fmtsize = GET_ALIGN_STRING_LEN(html_fmt);
+	fmt = (char *) malloc(fmtsize);
+	if (fmt == 0) {
+		os_printf("Cannot allocate memory to send html answer!\n");
+		return 0;
+	}
+	system_get_string_from_flash(html_fmt, fmt, fmtsize);
+
+	m = (char *) malloc(fmtsize + strlen(page) + 2);			// FIXME: check if zero + include size of data in malloc!!
+	sprintf(m, fmt, strlen(page), page);
+
+	free(fmt);
+
+	return m;
+}
 /**
  * Called by tcp server
  */

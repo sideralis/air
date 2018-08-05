@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>air</title>
+</head>
+<body>
+	<form name="" action="/connect.html" method="POST">
+		WIFI network:<br> 
+		<select name="network" id="listOfWifi">
+			<option value="Reseau1">Reseau1</option>
+			<option value="Reseau2">Reseau2</option>
+		</select> 
+		<br> WIFI password:<br> 
+		<input name="psw" type="password"><br>
+		<input name="send" type="submit"><br>
+	</form>
+	<script>
+		var wifiList, i, wifiNames;
+		wifiList = "";
+
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				wifi = JSON.parse(this.responseText);
+				for (i = 0; i < wifi.names.length; i++) {
+					wifiList += "<option value=\"" + wifi.names[i] + "\">"
+							+ wifi.names[i] + "</option>\n";
+				}
+				document.getElementById("listOfWifi").innerHTML = wifiList;
+			}
+		};
+		xhttp.open("POST", "wifilist.json", true);
+		xhttp.send();
+	</script>
+</body>
+</html>

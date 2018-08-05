@@ -7,6 +7,11 @@
 
 #include "esp_common.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "json/cJSON.h"
+
+#include "spiffs.h"
+#include <fcntl.h>
 
 #include "user_queue.h"
 #include "user_wifi.h"
@@ -24,7 +29,10 @@ void wifi_handle_event_cb(System_Event_t *evt)
 	struct led_info led_setup;
 	int got_ip = 0;
 
-	printf("event %x\n", evt->event_id);
+	//printf("event %x\n", evt->event_id);
+
+	if (evt == NULL)
+		return;
 
     switch (evt->event_id) {
         case EVENT_STAMODE_CONNECTED:
@@ -51,7 +59,7 @@ void wifi_handle_event_cb(System_Event_t *evt)
                     evt->event_info.sta_connected.aid);
 
             // Stop blinking to indicate we are connected
-			led_setup.color_to = LED_BLUE;
+			led_setup.color_to = LED_WHITE;
 			led_setup.state = LED_ON;
 			xQueueSend(led_queue, &led_setup, 0);
 
@@ -59,8 +67,16 @@ void wifi_handle_event_cb(System_Event_t *evt)
         case EVENT_SOFTAPMODE_STADISCONNECTED:
             printf("station: " MACSTR "leave, AID = %d\n", MAC2STR(evt->event_info.sta_disconnected.mac),
                     evt->event_info.sta_disconnected.aid);
+
+            // Start blinking to indicate we are disconnected
+			led_setup.color_to = LED_WHITE;
+			led_setup.color_from = LED_BLACK;
+			led_setup.state = LED_BLINK;
+			xQueueSend(led_queue, &led_setup, 0);
+
             break;
         default:
+//        	printf("event %x\n", evt->event_id);
             break;
     }
 }
@@ -112,6 +128,30 @@ void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
         }
         // Queue result
 		if (!(SLIST_EMPTY(&router_list))) {
+			char *buf;
+			cJSON *wifi_list = cJSON_CreateObject();				// FIXME check if wifi_list == NULL
+			cJSON *list = cJSON_CreateArray();						// FIXME check if list == NULL
+		    cJSON_AddItemToObject(wifi_list, "names", list);
+			SLIST_FOREACH(info, &router_list, next) {
+				cJSON *wifi = cJSON_CreateString(info->ssid);		// FIXME check if wifi == NULL
+		        cJSON_AddItemToArray(list, wifi);
+			}
+			buf = cJSON_Print(wifi_list);
+
+			int pfd;
+			pfd = open("/wifilist.json", O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+			if (pfd <= 3) {
+				printf("ERR: open file error!\n");
+			}
+			int write_byte = write(pfd, buf, strlen(buf));
+			if (write_byte <= 0) {
+				printf("ERR: write file error (wifilist.json)\n");
+			}
+			close(pfd);
+			free(buf);
+			os_printf("DBG: wifilist.json file written.\n");
+
+
 			ret = xQueueSend(wifi_scan_queue, &router_list, 0); 		// 0 = Don't wait if queue is full
 			if (ret != pdPASS) {
 				os_printf("WARNING: Problem when queuing scanned wifi!\n");
@@ -157,26 +197,18 @@ void task_wifi_scan(void *param) {
 			break;																		// TODO: We should exit only if we are sure we have found all networks
 	}
 
-	os_printf("DBG: Waiting 10s before terminating wifi scan task\n");
-	vTaskDelay(10000 / portTICK_RATE_MS);		// Wait 10s
+	os_printf("DBG: deleting wifi scan task\n");
 
 	vTaskDelete(NULL);
 }
 void conn_ap_init(void)
 {
-//    wifi_set_opmode(STATIONAP_MODE);
-//    struct station_config config;
-//    memset(&config, 0, sizeof(config));  //set value of config from address of &config to width of size to be value '0'
-//    sprintf(config.ssid, DEMO_AP_SSID);
-//    sprintf(config.password, DEMO_AP_PASSWORD);
-//    wifi_station_set_config(&config);
-//    wifi_set_event_handler_cb(wifi_handle_event_cb);
-//    wifi_station_connect();
+    wifi_set_opmode(STATION_MODE);
 }
 
 void soft_ap_init(void)
 {
-    wifi_set_opmode(STATIONAP_MODE);
+    wifi_set_opmode_current(SOFTAP_MODE/*STATIONAP_MODE*/);
 
     struct softap_config *config = (struct softap_config *) zalloc(sizeof(struct softap_config)); // initialization
 
@@ -189,6 +221,7 @@ void soft_ap_init(void)
     config->ssid_len = 6; // or its actual SSID length
     config->max_connection = 4;
 
+    os_printf("DBG: channel used in softap (1/2): %d\n", config->channel);
     wifi_softap_set_config(config); // Set ESP8266 soft-AP config
 
     free(config);

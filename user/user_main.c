@@ -26,15 +26,19 @@
 #include "uart.h"
 
 #include "lwip/sockets.h"
-#include "lwip/mdns.h"
 #include "lwip/netif.h"
 
+#include "json/cJSON.h"
+
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #ifdef DEBUG
 #include "esp8266/ets_sys.h"
 #include <../esp-gdbstub/gdbstub.h>
 #endif
+
+#include <fcntl.h>
 
 #include "gpio.h"
 #include "pwm.h"
@@ -53,6 +57,7 @@ void task_sds011(void *);
 void task_led(void *);
 void task_wifi_scan(void *);
 void softap_task(void *);
+void station_task(void *);
 
 void user_tcpserver_init(uint32 );
 void user_set_softap_config();
@@ -114,6 +119,7 @@ uint32 user_rf_cal_sector_set(void) {
 
 void task_main(void *param)
 {
+	bool ret2;
 	int got_ip;
 	int nb_ap;								// Nb of ap air can connect to
 	struct station_config config[5];		// Information on these ap
@@ -126,11 +132,13 @@ void task_main(void *param)
     struct router_info *info = NULL;
 
 	// Let's blink while we are not fully connected
-	led_setup.color_to = LED_BLUE;
+	led_setup.color_to = LED_WHITE;
 	led_setup.color_from = LED_BLACK;
 	led_setup.state = LED_BLINK;
 	xQueueSend(led_queue, &led_setup, 0);
 	wifi_set_event_handler_cb(wifi_handle_event_cb);
+
+	//wifi_station_disconnect();
 
 	while(1) {
 		// Get ap info
@@ -144,10 +152,14 @@ void task_main(void *param)
 
 			ret = xQueueReceive(wifi_scan_queue, &router_data, 10000 / portTICK_RATE_MS);			// Timeout after 10s
 			if (ret == errQUEUE_EMPTY) {
-				os_printf("DBG: No wifi dectected!\n");
+				os_printf("DBG: No wifi dectected! Aborting!\n");
 				// No wifi detected
 			} else {
 				os_printf("DBG: Wifi dectected!\n");
+
+				// Switch to SoftAP mode
+				xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
+				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
 
 				// Start TCP server
 				os_printf("DBG: Start TCP server\n");
@@ -156,19 +168,66 @@ void task_main(void *param)
 				// Wait for user network selection
 				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);
 
-				// User has now selected network, let's try to connect to it:
+				// Switch back to station mode
+				xTaskCreate(station_task,"station_task",500,NULL,6,NULL);
+				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
+
+			    // User has now selected network, let's try to connect to it:
 				convert_UTF8_string(station_info.ssid);
 				convert_UTF8_string(station_info.password);
 				os_printf("DBG: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
 
-				wifi_station_set_config(&station_info);
-				wifi_station_connect();
+				ret2 = wifi_station_set_config(&station_info);
+				if (ret2 == false)
+					os_printf("ERR: Can not set station config!\n");
 
-				// Wait for connection and ip before going to mDNS
+			    if(!wifi_station_dhcpc_status()){
+			        os_printf("ERR: DHCP is not started. Starting it...\n");
+			        if(!wifi_station_dhcpc_start()){
+			            os_printf("ERR: DHCP start failed!\n");
+			        }
+			    }
+
+				ret2 = wifi_station_connect();
+				if (ret2 == false)
+					os_printf("ERR: Can not connect to AP!\n");
+
+				// Wait for connection and ip
 				ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 				os_printf("DBG: We should be connected now\n");
-//				user_mdns_config();
 
+				// Write file
+				char *buf;
+				cJSON *connect_msg = cJSON_CreateObject();				// FIXME check if wifi_list == NULL
+				cJSON *status = cJSON_CreateString("connected");
+				cJSON_AddItemToObject(connect_msg, "status", status);
+				buf = cJSON_Print(connect_msg);
+
+				os_printf("DBG: cJSON message:\n%s\n",buf);
+
+				xSemaphoreTake( connect_sem, portMAX_DELAY );
+				os_printf("DBG: Start writing status_connect.json \n");
+				int pfd;
+				pfd = open("/status_connect.json", O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);			// TODO file must be also deleted
+				if (pfd <= 3) {
+					printf("ERR: open file error!\n");
+				}
+				int write_byte = write(pfd, buf, strlen(buf));
+				if (write_byte <= 0) {
+					printf("ERR: write file error (status_connect.json) %d\n",write_byte);
+				}
+				close(pfd);
+				os_printf("DBG: End writing status_connect.json \n");
+				xSemaphoreGive( connect_sem );
+
+				free(buf);
+
+				// Switch off led to indicate we are connected to station
+				led_setup.color_to = LED_WHITE;
+				led_setup.state = LED_OFF;
+				xQueueSend(led_queue, &led_setup, 0);
+
+				// Display data
 
 			}
 		} else {
@@ -177,7 +236,6 @@ void task_main(void *param)
 			// Wait for connection and ip before going to mDNS
 			ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 			os_printf("DBG: We should be connected now\n");
-//			user_mdns_config();
 
 			// Stop blinking to indicate we are connected
 			led_setup.color_to = LED_BLUE;
@@ -189,142 +247,7 @@ void task_main(void *param)
 	}
 }
 
-//int user_softAP_config(u32t local_ip, u32t gateway, u32t subnet) {
-//    int ret = true;
-//
-//    struct ip_info info;
-//    info.ip.addr = local_ip;
-//    info.gw.addr = gateway;
-//    info.netmask.addr = subnet;
-//
-//    if(!wifi_softap_dhcps_stop()) {
-//        printf("[APConfig] wifi_softap_dhcps_stop failed!\n");
-//    }
-//
-//    if(!wifi_set_ip_info(SOFTAP_IF, &info)) {
-//        printf("[APConfig] wifi_set_ip_info failed!\n");
-//        ret = false;
-//    }
-//
-//    struct dhcps_lease dhcp_lease;
-//    u32t ip = local_ip;
-//    ip[3] += 99;
-//    dhcp_lease.start_ip.addr = static_cast<uint32_t>(ip);
-//    printf("[APConfig] DHCP IP start: %s\n", ip);
-//
-//    ip[3] += 100;
-//    dhcp_lease.end_ip.addr = static_cast<uint32_t>(ip);
-//    DEBUG_WIFI("[APConfig] DHCP IP end: %s\n", ip.toString().c_str());
-//
-//    if(!wifi_softap_set_dhcps_lease(&dhcp_lease)) {
-//        DEBUG_WIFI("[APConfig] wifi_set_ip_info failed!\n");
-//        ret = false;
-//    }
-//
-//    // set lease time to 720min --> 12h
-//    if(!wifi_softap_set_dhcps_lease_time(720)) {
-//        DEBUG_WIFI("[APConfig] wifi_softap_set_dhcps_lease_time failed!\n");
-//        ret = false;
-//    }
-//
-//    uint8 mode = 1;
-//    if(!wifi_softap_set_dhcps_offer_option(OFFER_ROUTER, &mode)) {
-//        DEBUG_WIFI("[APConfig] wifi_softap_set_dhcps_offer_option failed!\n");
-//        ret = false;
-//    }
-//
-//    if(!wifi_softap_dhcps_start()) {
-//        DEBUG_WIFI("[APConfig] wifi_softap_dhcps_start failed!\n");
-//        ret = false;
-//    }
-//
-//    // check config
-//    if(wifi_get_ip_info(SOFTAP_IF, &info)) {
-//        if(info.ip.addr == 0x00000000) {
-//            DEBUG_WIFI("[APConfig] IP config Invalid?!\n");
-//            ret = false;
-//        } else if(local_ip != info.ip.addr) {
-//            ip = info.ip.addr;
-//            DEBUG_WIFI("[APConfig] IP config not set correct?! new IP: %s\n", ip.toString().c_str());
-//            ret = false;
-//        }
-//    } else {
-//        DEBUG_WIFI("[APConfig] wifi_get_ip_info failed!\n");
-//        ret = false;
-//    }
-//
-//    return ret;
-//}
 
-
-
-/******************************************************************************
- * FunctionName : user_set_softap_config
- * Description  : set SSID and password of ESP8266 softAP
- * Parameters   : none
- * Returns      : none
- *******************************************************************************/
-void user_set_softap_config(void) {
-	int ret;
-	struct softap_config *config = (struct softap_config *) zalloc(sizeof(struct softap_config)); // initialization
-    struct ip_info ip;
-    u8_t mac[NETIF_MAX_HWADDR_LEN];
-
-	// Get config
-	ret = wifi_softap_get_config(config);
-
-	if (ret == 0) {
-		os_printf("ERR: Could not get softap config!\n");
-		return;
-	}
-
-    wifi_get_macaddr(SOFTAP_IF, mac);
-
-	// Modify it
-	memset(config->ssid, 0, 32);
-	memset(config->password, 0, 64);
-	memcpy(config->ssid, "AIR-XX", 6);				// TODO: XX should be replaced by hash of mac address
-	//memcpy(config->password, "12345678", 8);		// No password as open wifi
-	config->authmode = AUTH_OPEN;
-	config->ssid_len = 6; 							// or its actual length
-	config->max_connection = 4; 					// how many stations can connect to ESP8266 softAP at most (4 is max)
-
-	// Save it
-	ETS_UART_INTR_DISABLE();
-	ret = wifi_softap_set_config(config); 			// Set ESP8266 softap config
-	ETS_UART_INTR_ENABLE();
-
-	if (ret == 0) {
-		os_printf("ERR: Could not set softap config!\n");
-		return;
-	}
-
-	// Check DHCP is started
-	if (wifi_softap_dhcps_status() != DHCP_STARTED) {
-		os_printf("ERR: DHCP not started, starting...\n");
-		if (!wifi_softap_dhcps_start()) {
-			os_printf("ERR: wifi_softap_dhcps_start failed!\n");
-		}
-	}
-
-    // Check IP config
-    if (wifi_get_ip_info(SOFTAP_IF, &ip)) {
-        if (ip.ip.addr == 0x00000000) {
-            // Invalid config
-        	os_printf("ERR: IP config Invalid resetting...\n");
-            //192.168.244.1 , 192.168.244.1 , 255.255.255.0
-//            ret = softAPConfig(0x01F4A8C0, 0x01F4A8C0, 0x00FFFFFF);
-//            if(!ret) {
-//            	os_printf("ERR: softAPConfig failed!\n");
-//                ret = false;
-//        	}
-        }
-    } else {
-    	os_printf("ERR: wifi_get_ip_info failed!\n");
-    }
-
-	free(config);
-}
 
 
 
@@ -332,30 +255,30 @@ void user_set_softap_config(void) {
  * mDNS configuration
  * Not yet working!!!
  */
-void IRAM_ATTR user_mdns_config()
-{
-	struct ip_info ipconfig;
-	struct mdns_info *info;
-
-	wifi_get_ip_info(STATION_IF, &ipconfig);
-
-	if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
-		os_printf("DBG: setting up mdns\n");
-		info = (struct mdns_info *)zalloc(sizeof(struct mdns_info));
-		if (info == 0)
-			return;
-
-		info->host_name = "air";
-		info->ipAddr = ipconfig.ip.addr;			// ESP8266 Station IP
-		info->server_name = "iot";
-		info->server_port = 80;
-		info->txt_data[0] = "version = now";
-		info->txt_data[1] = "user1 = data1";
-		info->txt_data[2] = "user2 = data2";
-
-		espconn_mdns_init(info);
-	}
-}
+//void IRAM_ATTR user_mdns_config()
+//{
+//	struct ip_info ipconfig;
+//	struct mdns_info *info;
+//
+//	wifi_get_ip_info(STATION_IF, &ipconfig);
+//
+//	if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
+//		os_printf("DBG: setting up mdns\n");
+//		info = (struct mdns_info *)zalloc(sizeof(struct mdns_info));
+//		if (info == 0)
+//			return;
+//
+//		info->host_name = "air";
+//		info->ipAddr = ipconfig.ip.addr;			// ESP8266 Station IP
+//		info->server_name = "iot";
+//		info->server_port = 80;
+//		info->txt_data[0] = "version = now";
+//		info->txt_data[1] = "user1 = data1";
+//		info->txt_data[2] = "user2 = data2";
+//
+//		espconn_mdns_init(info);
+//	}
+//}
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -364,31 +287,54 @@ void IRAM_ATTR user_mdns_config()
  *******************************************************************************/
 void IRAM_ATTR user_init(void) {
 
+	int led_type = LED_TYPE_RGB;
+	bool ret;
+	u8_t mac[NETIF_MAX_HWADDR_LEN];
+	u64 mac_full;
+	int i;
+
 	// Reconfigure UART to 115200 bauds
 	uart_init_new();
-
-	os_printf("SDK version:%s\n", system_get_sdk_version());
-	os_printf("ESP8266	chip	ID:0x%x\n", system_get_chip_id());
-	os_printf("AIR version: " AIR_VERSION " \n");
 
 #ifdef DEBUG
 //	gdbstub_init();
 #endif
 
+	// Display product information
+	ret = wifi_get_macaddr(STATION_IF, mac);
+	if (ret == false)
+		os_printf("ERR: Can not get MAC address!\n");
+	mac_full = 0;
+	for (i=0;i<NETIF_MAX_HWADDR_LEN;i++) {
+		mac_full <<= 8;
+		mac_full |= mac[i];
+	}
+	mac_full = 9223372036854775807UL;
+
+	os_printf("DBG: SDK version:%s\n", system_get_sdk_version());
+	os_printf("DBG: ESP8266 chip ID:0x%x\n", system_get_chip_id());
+	os_printf("DBG: AIR version: " AIR_VERSION " \n");
+	os_printf("DBG: MAC address: %lu\n", mac_full);
+	os_printf("DBG: integer size int %d long %li long long %lli\n",1,1L,1LL);
+
+
+	// Initialize spiffs
+	user_spiffs();
+
 	// Create queues
 	user_create_queues();
 
-	// Start SATIONAP mode for scanning and for connection
-   xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
+	// Start STATIONAP mode for scanning and for connection
+//	xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
+	xTaskCreate(station_task,"station_task",500,NULL,6,NULL);
 
 	// Start TCP server
 	espconn_init();
-//	user_tcpserver_init(SERVER_LOCAL_PORT);
 
 //	user_mdns_config();
 
 	// Start task led
-	xTaskCreate(task_led, "led driver", 256, NULL, 2, NULL);
+//	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
 
 	// Main task - state machine
 	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);

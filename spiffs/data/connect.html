@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title></title>
+  </head>
+  <body>
+    <p id="msg">Please wait for led on then</p>
+    <p>Press one of this 2 buttons:</p>
+    <p><button onclick="connected();" name="blinkingLed">Led is blinking</button></p>
+    <p><button onclick="not_connected();" name="notBlinkingLed">Led is not
+        blinking</button> </p>
+    <script>
+      function notConnected() {
+      	document.getDocumentById("msg").innerHTML = "Your are not connected. Please try again";
+				window.location.href= "http://192.168.1.23/reconnect.html"
+      }
+      function connected() {
+        document.getDocumentById("msg").innerHTML = "Your are now connected. Redirecting to main page";
+				window.location.href= "http://192.168.1.23/data.html"
+      }
+    </script>
+  </body>
+</html>

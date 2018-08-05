@@ -7,6 +7,7 @@
 
 #include "esp_common.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "user_led.h"
 #include "user_queue.h"
@@ -33,12 +34,21 @@ int led_intensity;
 int led_time_blink;
 int led_speed_fade;
 
+static void led_set_duty_inv(uint32 duty, uint8 channel) {
+	duty = 1023-duty;
+	pwm_set_duty(duty, channel);
+}
+static void led_set_duty_nor(uint32 duty, uint8 channel) {
+	pwm_set_duty(duty, channel);
+}
+
 void task_led(void *param)
 {
 	int r,g,b;
 	int r1,g1,b1;
 	int queue_size;
 	struct led_info led_setup;
+	void (*led_set_duty)(uint32, uint8);
 
 	uint32 io_info[][3] = {
             { PWM_0_OUT_IO_MUX, PWM_0_OUT_IO_FUNC, PWM_0_OUT_IO_NUM }, //Channel 0		RED
@@ -51,15 +61,20 @@ void task_led(void *param)
 	led_state = LED_OFF;
 	led_color_to = LED_ORANGE;
 	led_color_from = LED_BLUE;
-	led_intensity = LED_INTENSITY_BRIGHT;
+	led_intensity = LED_INTENSITY_DIM;
 	led_time_blink = 500;
+
+	if (*(int *)param == LED_TYPE_RGB)
+		led_set_duty = led_set_duty_inv;
+	else
+		led_set_duty = led_set_duty_nor;
 
 	while(1) {
 		switch (led_state) {
 		case LED_OFF:
-			pwm_set_duty(0, 0); // RED
-			pwm_set_duty(0, 2); // GREEN
-			pwm_set_duty(0, 1); // BLUE
+			led_set_duty(0, 0); // RED
+			led_set_duty(0, 2); // GREEN
+			led_set_duty(0, 1); // BLUE
 
 			led_color_current = 0;
 
@@ -77,9 +92,9 @@ void task_led(void *param)
 			g = GET_GREEN(led_color_to) * led_intensity;
 			b = GET_BLUE(led_color_to) * led_intensity;
 
-			pwm_set_duty(r, 0); // RED
-			pwm_set_duty(g, 2); // GREEN
-			pwm_set_duty(b, 1); // BLUE
+			led_set_duty(r, 0); // RED
+			led_set_duty(g, 2); // GREEN
+			led_set_duty(b, 1); // BLUE
 
 			led_color_current = led_color_to;
 
@@ -96,9 +111,9 @@ void task_led(void *param)
 			g = GET_GREEN(led_color_to) * led_intensity;
 			b = GET_BLUE(led_color_to) * led_intensity;
 
-			pwm_set_duty(r, 0); // RED
-			pwm_set_duty(g, 2); // GREEN
-			pwm_set_duty(b, 1); // BLUE
+			led_set_duty(r, 0); // RED
+			led_set_duty(g, 2); // GREEN
+			led_set_duty(b, 1); // BLUE
 			pwm_start();
 
 			led_color_current = led_color_to;

@@ -14,4 +14,6 @@ extern xQueueHandle network_queue;
 extern xQueueHandle status_scan_queue;
 extern xQueueHandle got_ip_queue;
 
+extern xSemaphoreHandle connect_sem;
+
 #endif /* INCLUDE_USER_QUEUE_H_ */

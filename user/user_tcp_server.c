@@ -8,6 +8,10 @@
 #include "esp_common.h"
 #include "espconn.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
+
+#include "spiffs.h"
+#include <fcntl.h>
 
 #include "user_queue.h"
 #include "user_html.h"
@@ -55,20 +59,78 @@ static void IRAM_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned sho
 		return;
 	}
 
-	if (html_content.get) {
-		os_printf("DBG: A GET request\n");
-		return;
+
+	// Search spiffs for webpage
+	int pfd;
+	xSemaphoreTake( connect_sem, portMAX_DELAY );
+	os_printf("DBG: Start1 opening %s\n", html_content.page);
+	pfd = open(html_content.page, O_RDWR);
+	os_printf("DBG: End1 opening\n");
+	xSemaphoreGive( connect_sem );
+
+	while ((strstr(html_content.page,"json") != 0) && (pfd < 3)) {
+		vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 0.5s
+		xSemaphoreTake( connect_sem, portMAX_DELAY );
+		os_printf("DBG: Start2 opening %s\n", html_content.page);
+		pfd = open(html_content.page, O_RDWR);
+		xSemaphoreGive( connect_sem );
+		os_printf("DBG: End2 opening\n");
 	}
 
-	if (strcmp(html_content.page,"/wifi.html") == 0) {
-		// Here we get the data back, so let's find the network and the password.
-		process_network_choice(pusrdata);
-		m = display_network_choosen();
+	if (pfd < 3) {
+		os_printf("ERR: Can't open HTML file! %s\n", html_content.page);
+		// TODO return 404
+	} else {
+		if (html_content.post) {
+			os_printf("DBG: POST request\n");
+			if (strcmp(html_content.page,"/connect.html") == 0) {
+				process_network_choice(pusrdata);
+			}
+		}
+
+		// Read file
+		char *page;
+		page = calloc(20000, 1);
+		if (page == 0)
+			os_printf("ERR: cannot allocate memory for page!\n");
+
+		if (read(pfd, page, 20000) < 0)
+			os_printf("ERR: Can't read file %s!\n",html_content.page);
+		close(pfd);
+
+		// Add header
+		m = html_add_header(page);
+		free(page);
+
+//		os_printf("=================\n"
+//				"%s\n"
+//				"=================\n", m);
+
+		// Return data
 		espconn_send(pesp_conn, m, strlen(m));
 		free(m);
-	} else {
-		display_404();
 	}
+
+
+//	if (strcmp(html_content.page,"/wifi.html") == 0) {
+//		if (html_content.get) {
+//			os_printf("DBG: A GET request\n");
+//			// We should display a status connected or not connected or error connection
+//			// We should then display a selection of network status to connect on
+//			m = display_network_choice();
+//			espconn_send(pesp_conn, m, strlen(m));
+//			free(m);
+//		} else {
+//			os_printf("DBG: A POST request\n");
+//			// Here we get the data back, so let's find the network and the password.
+//			process_network_choice(pusrdata);
+//			m = display_network_choosen();
+//			espconn_send(pesp_conn, m, strlen(m));
+//			free(m);
+//		}
+//	} else {
+//		display_404();
+//	}
 
 }
 
@@ -119,13 +181,13 @@ static void tcp_server_multi_send(void)
 			os_printf("DEBUG(%d): S=%d P=%d IP1=%d IP2=%d IP3=%d IP4=%d\n", count, premot[count].state, premot[count].remote_port, premot[count].remote_ip[0],
 					premot[count].remote_ip[1], premot[count].remote_ip[2], premot[count].remote_ip[3]);
 
-			m = display_network_choice();
-
-			os_printf("DATA = %s\n", m);
-
-			espconn_send(pesp_conn, m, strlen(m));
-
-			free(m);
+//			m = display_network_choice();
+//
+//			os_printf("DATA = %s\n", m);
+//
+//			espconn_send(pesp_conn, m, strlen(m));
+//
+//			free(m);
 		}
 	}
 }

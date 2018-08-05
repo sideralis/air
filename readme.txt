@@ -75,6 +75,13 @@ Display data + led									(3) Display all wifi user can connect to or none if n
 													User select a network or none										NO						YES
 																														Goto (2)				Goto (3)
 
+===============
+== WEB PAGES ==
+===============
+/index.html or /: main page 
+
+/wifi.html: Page used to connect to a wifi station
+	
 													
 ===========
 == TO DO ==
