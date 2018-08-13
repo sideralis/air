@@ -1,5 +1,5 @@
 /*
- * ESPRSSIF MIT License
+ * ESPRESSIF MIT License
  *
  * Copyright (c) 2015 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
@@ -49,7 +49,7 @@
 
 
 /* Defines */
-#define AIR_VERSION			"0.0.2"
+#define AIR_VERSION			"0.0.3"
 #define SERVER_LOCAL_PORT   80
 
 /* Prototypes */
@@ -71,7 +71,7 @@ SLIST_HEAD(router_info_head, router_info) router_data;
 
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
- * Description  : SDK just reversed 4 sectors, used for rf init data and parameters.
+ * Description  : SDK just reserved 4 sectors, used for rf init data and parameters.
  *                We add this function to force users to set rf cal sector, since
  *                we don't know which sector is free in user's application.
  *                sector map for last several sectors : ABCCC
@@ -136,24 +136,24 @@ void task_main(void *param)
 	led_setup.color_from = LED_BLACK;
 	led_setup.state = LED_BLINK;
 	xQueueSend(led_queue, &led_setup, 0);
-	wifi_set_event_handler_cb(wifi_handle_event_cb);
 
-	//wifi_station_disconnect();
+	// Register wifi call back function
+	wifi_set_event_handler_cb(wifi_handle_event_cb);
 
 	while(1) {
 		// Get ap info
 		//wifi_station_get_current_ap_id();
-		nb_ap = wifi_station_get_ap_info(config);
+		nb_ap = wifi_station_get_ap_info(config);					// Get number of registered access points
 		printf("DBG: Data on station = %d\n", nb_ap);
 		if (nb_ap < 500) {		//  FIXME should be == 0
 			// We have never connected to any network, let's scan for wifi
 			// Start task wifi scan
 			xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, &handle_task_wifi);
-
+			// Wait for end of scan
 			ret = xQueueReceive(wifi_scan_queue, &router_data, 10000 / portTICK_RATE_MS);			// Timeout after 10s
 			if (ret == errQUEUE_EMPTY) {
-				os_printf("DBG: No wifi dectected! Aborting!\n");
 				// No wifi detected
+				os_printf("DBG: No wifi dectected! Aborting!\n");									// TODO we should do something if there is no wifi
 			} else {
 				os_printf("DBG: Wifi dectected!\n");
 
@@ -165,6 +165,7 @@ void task_main(void *param)
 				os_printf("DBG: Start TCP server\n");
 				user_tcpserver_init(SERVER_LOCAL_PORT);
 
+				// User is now suppose to connect to our network and select an access point
 				// Wait for user network selection
 				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);
 
@@ -173,6 +174,7 @@ void task_main(void *param)
 				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
 
 			    // User has now selected network, let's try to connect to it:
+				// Info on the selected network is in station_info variable
 				convert_UTF8_string(station_info.ssid);
 				convert_UTF8_string(station_info.password);
 				os_printf("DBG: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
@@ -196,6 +198,7 @@ void task_main(void *param)
 				ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 				os_printf("DBG: We should be connected now\n");
 
+				// TODO indicate to user we are connected
 				// Write file
 				char *buf;
 				cJSON *connect_msg = cJSON_CreateObject();				// FIXME check if wifi_list == NULL
@@ -233,7 +236,7 @@ void task_main(void *param)
 		} else {
 			printf("DBG: We have already connected to a network. Trying again...\n");
 
-			// Wait for connection and ip before going to mDNS
+			// Wait for connection and ip
 			ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 			os_printf("DBG: We should be connected now\n");
 
@@ -248,37 +251,6 @@ void task_main(void *param)
 }
 
 
-
-
-
-/**
- * mDNS configuration
- * Not yet working!!!
- */
-//void IRAM_ATTR user_mdns_config()
-//{
-//	struct ip_info ipconfig;
-//	struct mdns_info *info;
-//
-//	wifi_get_ip_info(STATION_IF, &ipconfig);
-//
-//	if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
-//		os_printf("DBG: setting up mdns\n");
-//		info = (struct mdns_info *)zalloc(sizeof(struct mdns_info));
-//		if (info == 0)
-//			return;
-//
-//		info->host_name = "air";
-//		info->ipAddr = ipconfig.ip.addr;			// ESP8266 Station IP
-//		info->server_name = "iot";
-//		info->server_port = 80;
-//		info->txt_data[0] = "version = now";
-//		info->txt_data[1] = "user1 = data1";
-//		info->txt_data[2] = "user2 = data2";
-//
-//		espconn_mdns_init(info);
-//	}
-//}
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -290,8 +262,10 @@ void IRAM_ATTR user_init(void) {
 	int led_type = LED_TYPE_RGB;
 	bool ret;
 	u8_t mac[NETIF_MAX_HWADDR_LEN];
-	u64 mac_full;
+	u32 mac_high, mac_low;
 	int i;
+	long long_data = 1L;
+	long long llong_data = 1LL;
 
 	// Reconfigure UART to 115200 bauds
 	uart_init_new();
@@ -304,18 +278,21 @@ void IRAM_ATTR user_init(void) {
 	ret = wifi_get_macaddr(STATION_IF, mac);
 	if (ret == false)
 		os_printf("ERR: Can not get MAC address!\n");
-	mac_full = 0;
-	for (i=0;i<NETIF_MAX_HWADDR_LEN;i++) {
-		mac_full <<= 8;
-		mac_full |= mac[i];
+	mac_high = mac_low = 0;
+	for (i=0;i<NETIF_MAX_HWADDR_LEN/2;i++) {
+		mac_high <<= 8;
+		mac_high |= mac[i];
 	}
-	mac_full = 9223372036854775807UL;
+	for (i=NETIF_MAX_HWADDR_LEN/2;i<NETIF_MAX_HWADDR_LEN;i++) {
+		mac_low <<= 8;
+		mac_low |= mac[i];
+	}
 
 	os_printf("DBG: SDK version:%s\n", system_get_sdk_version());
 	os_printf("DBG: ESP8266 chip ID:0x%x\n", system_get_chip_id());
 	os_printf("DBG: AIR version: " AIR_VERSION " \n");
-	os_printf("DBG: MAC address: %lu\n", mac_full);
-	os_printf("DBG: integer size int %d long %li long long %lli\n",1,1L,1LL);
+	os_printf("DBG: MAC address: 0x%0x%0x\n", mac_high, mac_low);
+	printf("DBG: integer size int %d long %l long long %ll\n",1,long_data,llong_data);
 
 
 	// Initialize spiffs
@@ -328,10 +305,8 @@ void IRAM_ATTR user_init(void) {
 //	xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
 	xTaskCreate(station_task,"station_task",500,NULL,6,NULL);
 
-	// Start TCP server
+	// Init to be able to start TCP server later
 	espconn_init();
-
-//	user_mdns_config();
 
 	// Start task led
 //	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);

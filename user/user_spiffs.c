@@ -46,41 +46,4 @@ void user_spiffs()
 
 	// Mount SPIFFS image
 	spiffs_fs1_init();
-
-//	// Create a new file
-//	char *buf = "hello world";
-//
-//	pfd = open("myfile", O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-//	if (pfd <= 3) {
-//		printf("open file error\n");
-//	}
-//
-//	// Write to new file
-//	int write_byte = write(pfd, buf, strlen(buf));
-//	if (write_byte <= 0) {
-//		printf("write file error\n");
-//	}
-//	close(pfd);
-//
-//	// Read previous created file
-//	pfd = open("myfile", O_RDWR);
-//	if (pfd < 3)
-//		os_printf("ERR: Can't open file! %d\n", pfd);
-//	else {
-//		if (read(pfd, out, 20) < 0)
-//			os_printf("ERR: Can't read file!\n");
-//		close(pfd);
-//		printf("--> %s <--\n", out);
-//	}
-//
-//	// Read file from generated image with mkspiffs tool
-//	pfd = open("/readme.txt", O_RDWR);			// !! Don't forget to add the / before the name of the file
-//	if (pfd < 3)
-//		os_printf("ERR: Can't open file! %d\n", pfd);
-//	else {
-//		if (read(pfd, out, 20) < 0)
-//			os_printf("ERR: Can't read file!\n");
-//		close(pfd);
-//		printf("--> %s <--\n", out);
-//	}
 }

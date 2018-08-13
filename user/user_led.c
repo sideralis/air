@@ -12,6 +12,7 @@
 #include "user_led.h"
 #include "user_queue.h"
 
+// The 3 GPIOs used to control the leds.
 #define PWM_0_OUT_IO_MUX PERIPHS_IO_MUX_MTDI_U
 #define PWM_0_OUT_IO_NUM 12
 #define PWM_0_OUT_IO_FUNC  FUNC_GPIO12
@@ -34,13 +35,17 @@ int led_intensity;
 int led_time_blink;
 int led_speed_fade;
 
+// When led common is VDD
 static void led_set_duty_inv(uint32 duty, uint8 channel) {
 	duty = 1023-duty;
 	pwm_set_duty(duty, channel);
 }
+
+// When led common is GND
 static void led_set_duty_nor(uint32 duty, uint8 channel) {
 	pwm_set_duty(duty, channel);
 }
+
 
 void task_led(void *param)
 {
@@ -80,7 +85,7 @@ void task_led(void *param)
 
 			pwm_start();
 
-			// Wait for next event
+			// Wait for a new command
 			xQueueReceive(led_queue, &led_setup, portMAX_DELAY);
 			printf("DBG: Receive led command - %d %d %d\n",led_setup.state,led_setup.color_to, led_setup.color_from );
 			led_state = led_setup.state;
@@ -100,7 +105,7 @@ void task_led(void *param)
 
 			pwm_start();
 
-			// Wait for next event
+			// Wait for a new command
 			xQueueReceive(led_queue, &led_setup, portMAX_DELAY);
 			led_state = led_setup.state;
 			led_color_to = led_setup.color_to;
@@ -124,7 +129,7 @@ void task_led(void *param)
 			led_color_to = led_color_from;
 			led_color_from = tmp;
 
-			// Check if we have a new led setup
+			// Check if we have a new led command
 			queue_size = uxQueueMessagesWaiting(led_queue);
 			if (queue_size != 0) {
 				xQueueReceive(led_queue, &led_setup, portMAX_DELAY);
