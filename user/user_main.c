@@ -292,7 +292,6 @@ void IRAM_ATTR user_init(void) {
 	os_printf("DBG: ESP8266 chip ID:0x%x\n", system_get_chip_id());
 	os_printf("DBG: AIR version: " AIR_VERSION " \n");
 	os_printf("DBG: MAC address: 0x%0x%0x\n", mac_high, mac_low);
-	printf("DBG: integer size int %d long %l long long %ll\n",1,long_data,llong_data);
 
 
 	// Initialize spiffs
