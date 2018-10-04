@@ -26,38 +26,98 @@ static const char html_fmt[] ICACHE_RODATA_ATTR STORE_ATTR =
 		"%s";
 
 /* Functions */
+
+void extract_param(char *str)
+{
+	pParam = strchr(pQuery,'&');
+	while (pParam != 0) {
+		pSep = strchr()
+	}
+
+}
 /**
  * Process the html header data which are pushed to TCP server.
  * Target is to know which method (GET ou POST) and page are requested.
  */
-int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *content)
+#define CONTENT_TYPE 	"Content-Type: "
+#define CONTENT_LENGTH	"Content-Length: "
+int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *request)
 {
-	char *pGP;
-	char *pHTTP;
+	char *pGP, *pHTTP, *pQuery, *pParam, *pContentType, *pContentLength, *pEnd;
 	int size;
+	char page[128];
+	int query_nb = 0;
 
+	// Let's clear request
+	request->method = 0;
+	request->page_name = 0;
+	for (i=0;i<sizeof(request->form)/sizeof(request->form[0]);i++) {
+		request->form[i].key = 0;
+		request->form[i].valure = 0;
+	}
+
+	// First find method used
 	pGP = strstr(pusrdata,"GET");
 	if (pGP != 0) {
-		content->get = 1;
-		content->post = 0;
+		request->method = METHOD_GET;
 		pGP += 4;
 	} else {
 		pGP = strstr(pusrdata,"POST");
 		if (pGP == 0)
 			return -1;
-		content->get = 0;
-		content->post = 1;
+		request->method = METHOD_POST;
 		pGP += 5;
 	}
+	// Now get page name
 	pHTTP = strstr(pusrdata,"HTTP");
 	if (pHTTP == 0 || pHTTP < pGP +1)
 		return -1;
 	size = pHTTP-pGP-1;
-	if (size > sizeof(content->page))
-		size = sizeof(content->page)-1;
+	if (size > sizeof(page))
+		size = sizeof(page)-1;
 	memcpy(content->page, pGP, size);
-	content->page[size] = 0;
+	request->page[size] = 0;
 
+	// Now get parameter key and value
+	if (request->method == METHOD_GET) {
+		pQuery = strchr(page,'?');
+		if (pQuery == 0) {
+			// No parameter, just copy the page name.
+			page[31] = 0;
+			strcpy(page,request->page_name);
+		} else {
+			pEnd = strchr(pQuery,'#');
+			if (pEnd == 0)
+				// To continue find the length.
+			extract_param(pQuery+1,,request->form);
+		}
+	} else {
+		// Search for Content-type field
+		pContentType = strstr(pusrdata,CONTENT_TYPE);
+		if (pContentType == 0)
+			return -1;
+		if (strcmp(pContentType+sizeof(CONTENT_TYPE),"application/x-www-form-urlencoded") != 0)
+			return -1;			// Error type is 415
+		// Search for content length
+		pContentLength = strstr(pusrdata,CONTENT_LENGTH);
+		if (pContentLength == 0)
+			return -1;
+		pContentLength += sizeof(CONTENT_LENGTH);
+		pEnd = strstr(pContentLength, "\r\n");
+		if (pEnd == 0)
+			return -1;
+		strncpy(page,pContentLength,pEnd-pContentLength);
+		page[pEnd-pContentLength] = 0;
+		size = atoi(page);
+		// Search for parameters, e.g. for an empty line
+		pParam = strstr(pContentLength,"\r\n\r\n");
+		if (pParam == 0) {
+			return -1;
+		}
+		pParam += 2;
+
+		extract_param(pParam, size, request->form);
+	}
 	return 0;
 }
 /**

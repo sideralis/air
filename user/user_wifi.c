@@ -126,6 +126,7 @@ void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
             }
             bss = STAILQ_NEXT(bss, next);
         }
+		// TODO remove duplicated networks
         // Queue result
 		if (!(SLIST_EMPTY(&router_list))) {
 			char *buf;

@@ -37,6 +37,18 @@ static void ICACHE_FLASH_ATTR tcp_server_sent_cb(void *arg)
 	os_printf("tcp sent cb \r\n");
 }
 
+struct page_data {
+	char page_name[32];
+	int method;
+	void (*handler)(void);
+};
+
+struct html_page_handler[] = {
+		{ "wifi", METHOD_ALL, network_select_handler },
+		{ "connect", METHOD_ALL, connect_handler},
+};
+
+
 /******************************************************************************
  * FunctionName : tcp_server_recv_cb
  * Description  : receive callback.
@@ -53,12 +65,11 @@ static void IRAM_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned sho
 
 	os_printf("tcp recv : %s \r\n", pusrdata);
 
-	// Extract from web page if this is a get or a push and which page is requested
+	// Extract from web page if this is a get or a push and which page is requested and the parameters of the page
 	if (process_header_recv(pusrdata, &html_content)) {
 		os_printf("ERR: Error in extraction!\n");
 		return;
 	}
-
 
 	// Search spiffs for webpage
 	int pfd;
