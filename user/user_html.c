@@ -7,6 +7,8 @@
 #include "esp_common.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
+#include "espconn.h"
+#include <fcntl.h>
 
 #include "user_wifi.h"
 #include "user_html.h"
@@ -27,33 +29,73 @@ static const char html_fmt[] ICACHE_RODATA_ATTR STORE_ATTR =
 
 /* Functions */
 
-void extract_param(char *str)
+/**
+ * Extract a key and a value from a string starting at start and ending at end
+ * String is key=value
+ * Results are stored in form
+ */
+int extract_key_value(char *start, char *end, struct page_param *form)
 {
-	pParam = strchr(pQuery,'&');
-	while (pParam != 0) {
-		pSep = strchr()
-	}
+	char *pSep;
+	pSep = strchr(start,'=');
+	if (pSep == 0 || pSep >= end)
+		return -1;
+	if ((pSep-start) > sizeof(form->key)-1)
+		return -1;
+	strncpy(form->key,start,pSep-start);
+	form->key[pSep-start] = 0;
+	if ((end-(pSep+1)) > sizeof(form->value)-1)
+		return -1;
+	strncpy(form->value,pSep+1,end-(pSep+1));
+	form->value[end-(pSep+1)] = 0;
 
+	return 0;
+}
+/**
+ * Extract several keys and values from a string starting at start and ending at end
+ * String is key1=value1&key2=value2&key3=value3...
+ * Results are stored in form
+ */
+int extract_params(char *start, char *end, struct page_param *form)
+{
+	char *pParam;
+	int i = 0;
+	int ret;
+
+	pParam = strchr(start,'&');
+	while (pParam != 0 && pParam < end) {
+		ret = extract_key_value(start, pParam, &form[i]);
+		if (ret)
+			return ret;
+		i += 1;
+		start = pParam+1;
+		pParam = strchr(start,'&');
+	}
+	// Last parameters
+	ret = extract_key_value(start, end, &form[i]);
+	return ret;
 }
 /**
  * Process the html header data which are pushed to TCP server.
- * Target is to know which method (GET ou POST) and page are requested.
+ * Target is to know which method (GET ou POST), which page is requested and with which parameters.
  */
-#define CONTENT_TYPE 	"Content-Type: "
-#define CONTENT_LENGTH	"Content-Length: "
+#define CONTENT_TYPE 		"Content-Type: "
+#define CONTENT_TYPE_VALUE 	"application/x-www-form-urlencoded"
+#define CONTENT_LENGTH		"Content-Length: "
 int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *request)
 {
 	char *pGP, *pHTTP, *pQuery, *pParam, *pContentType, *pContentLength, *pEnd;
 	int size;
-	char page[128];
+	char page_and_params[128];
 	int query_nb = 0;
+	int i;
 
 	// Let's clear request
 	request->method = 0;
-	request->page_name = 0;
+	request->page_name[0] = 0;
 	for (i=0;i<sizeof(request->form)/sizeof(request->form[0]);i++) {
-		request->form[i].key = 0;
-		request->form[i].valure = 0;
+		request->form[i].key[0] = 0;
+		request->form[i].value[0] = 0;
 	}
 
 	// First find method used
@@ -73,98 +115,73 @@ int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *reque
 	if (pHTTP == 0 || pHTTP < pGP +1)
 		return -1;
 	size = pHTTP-pGP-1;
-	if (size > sizeof(page))
-		size = sizeof(page)-1;
-	memcpy(content->page, pGP, size);
-	request->page[size] = 0;
+	if (size > sizeof(page_and_params))
+		size = sizeof(page_and_params)-1;
+	memcpy(page_and_params, pGP, size);
+	page_and_params[size] = 0;
 
 	// Now get parameter key and value
 	if (request->method == METHOD_GET) {
-		pQuery = strchr(page,'?');
+		// Method GET: parameters are in the page name after character '?'
+		pQuery = strchr(page_and_params,'?');
 		if (pQuery == 0) {
 			// No parameter, just copy the page name.
-			page[31] = 0;
-			strcpy(page,request->page_name);
+			page_and_params[sizeof(request->page_name)-1] = 0;			// Page name can't be longer than 31 characters
+			strcpy(request->page_name, page_and_params);
 		} else {
+			// Some parameter, just copy the page name.
+			strncpy(request->page_name, page_and_params, pQuery-page_and_params);
+			request->page_name[pQuery-page_and_params] = 0;
+
+			// Now let's find the end of the query
 			pEnd = strchr(pQuery,'#');
-			if (pEnd == 0)
-				// To continue find the length.
-			extract_param(pQuery+1,,request->form);
+			if (pEnd == 0) {
+				pEnd = pQuery+strlen(pQuery);
+			}
+			// To continue find the length.
+			extract_params(pQuery+1,pEnd,request->form);
 		}
 	} else {
+		// Method POST: parameters are in data
+		// First store the page name
+		strcpy(request->page_name, page_and_params);
 		// Search for Content-type field
 		pContentType = strstr(pusrdata,CONTENT_TYPE);
-		if (pContentType == 0)
-			return -1;
-		if (strcmp(pContentType+sizeof(CONTENT_TYPE),"application/x-www-form-urlencoded") != 0)
-			return -1;			// Error type is 415
+		if (pContentType != 0) {
+			if (strncmp(pContentType+sizeof(CONTENT_TYPE)-1,CONTENT_TYPE_VALUE, sizeof(CONTENT_TYPE_VALUE)-1) != 0)
+				return -1;			// Error type is 415
+		}
 		// Search for content length
 		pContentLength = strstr(pusrdata,CONTENT_LENGTH);
 		if (pContentLength == 0)
 			return -1;
-		pContentLength += sizeof(CONTENT_LENGTH);
+		pContentLength += sizeof(CONTENT_LENGTH)-1;
 		pEnd = strstr(pContentLength, "\r\n");
 		if (pEnd == 0)
 			return -1;
-		strncpy(page,pContentLength,pEnd-pContentLength);
-		page[pEnd-pContentLength] = 0;
-		size = atoi(page);
-		// Search for parameters, e.g. for an empty line
-		pParam = strstr(pContentLength,"\r\n\r\n");
-		if (pParam == 0) {
-			return -1;
-		}
-		pParam += 2;
+		strncpy(page_and_params,pContentLength,pEnd-pContentLength);
+		page_and_params[pEnd-pContentLength] = 0;
+		size = atoi(page_and_params);
 
-		extract_param(pParam, size, request->form);
+		// Extract parameters from body if any
+		if (size == 0) {
+			if (pContentType != 0)
+				return -1;
+		} else {
+			// Search for parameters, e.g. for an empty line
+			pParam = strstr(pContentLength,"\r\n\r\n");
+			if (pParam == 0) {
+				return -1;
+			}
+			pParam += 4;		// to skip the empty line
+
+			extract_params(pParam, pParam+size, request->form);
+		}
 	}
 	return 0;
 }
-/**
- * Process the choice of the network by the user
- */
-int IRAM_ATTR process_network_choice(char *pusrdata)
-{
-	// TODO: test with an empty password
 
-	struct station_config station_info;
-	char *p1, *p2, *p3;
-
-	// === wifi network ===
-	p1 = strstr(pusrdata, "network");
-
-	if (p1 == 0)
-		return -1;
-
-	memset(&station_info, 0, sizeof(station_info));  //set value of config from address of &config to width of size to be value '0'
-
-	for (; *p1 != '='; p1++)
-		;						// FIXME: may go too far
-	p1++;
-	p2 = p1;
-	for (; *p1 != '&'; p1++)
-		;						// FIXME: may go too far
-	p3 = p1;
-	memcpy(station_info.ssid, p2, p3 - p2);
-	station_info.ssid[p3 - p2] = 0;			// FIXME: check if needed
-	// === password ===
-	for (; *p1 != '='; p1++)
-		;						// FIXME: may go too far
-	p1++;
-	p2 = p1;
-	for (; *p1 != 0 && *p1 != '&'; p1++)
-		;						// FIXME: may go too far
-	p3 = p1;
-	memcpy(station_info.password, p2, p3 - p2);
-	station_info.password[p3 - p2] = 0;		// FIXME: check if needed
-
-	// === Send info for main task ===
-	xQueueSend(network_queue, &station_info, 0);
-
-	return 0;
-}
-
-IRAM_ATTR char *html_add_header(char *page)
+char *html_add_header(char *page)
 {
 	char *fmt;
 	char *m;
@@ -183,4 +200,54 @@ IRAM_ATTR char *html_add_header(char *page)
 	free(fmt);
 
 	return m;
+}
+
+int IRAM_ATTR html_render_template(char *page_name, struct espconn *pesp_conn)
+{
+	int pfd;
+
+	xSemaphoreTake( connect_sem, portMAX_DELAY );
+	os_printf("INFO: Try opening page from spiffs %s\n", page_name);
+	pfd = open(page_name, O_RDWR);
+	xSemaphoreGive( connect_sem );
+
+	if (pfd < 3) {
+		os_printf("ERR: Can't open HTML file! %s\n", page_name);
+		return -1;
+	} else {
+		os_printf("INFO: Page is now open\n");
+
+		// Read file
+		char *page, *m;
+		page = calloc(20000, 1);
+		if (page == 0) {
+			os_printf("ERR: cannot allocate memory for page!\n");
+			return -1;
+		}
+
+		if (read(pfd, page, 20000) < 0) {
+			os_printf("ERR: Can't read file %s!\n", page_name);
+			close(pfd);
+			free(page);
+			return -1;
+		}
+		close(pfd);
+
+		// Add header
+		m = html_add_header(page);
+		free(page);
+
+//		os_printf("=================\n"
+//				"%s\n"
+//				"=================\n", m);
+
+		// Return data
+		espconn_send(pesp_conn, m, strlen(m));
+		free(m);
+		return 0;
+	}
+
+
+
+
 }

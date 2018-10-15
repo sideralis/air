@@ -8,18 +8,21 @@
 #ifndef INCLUDE_USER_HTML_H_
 #define INCLUDE_USER_HTML_H_
 
-#define METHOD_GET 1
-#define METHOD_POST 2
+#define METHOD_GET 		0b01
+#define METHOD_POST 	0b10
+#define METHOD_ALL		0b11
 
+// The parameters given with a page (found in the page name for a GET and in content for a POST)
 struct page_param {
 	char key[16];
 	char value[48];
 };
 
+// A description of the page received
 struct header_html_recv {
-	char page_name[32];
-	short method;
-	struct html_param form[10];
+	char page_name[64];				// name of the page
+	short method;					// method (GET/POST)
+	struct page_param form[10];		// The parameters associated with the page
 };
 
 int process_header_recv(char *, struct header_html_recv *);

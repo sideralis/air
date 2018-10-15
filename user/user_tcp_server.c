@@ -15,6 +15,7 @@
 
 #include "user_queue.h"
 #include "user_html.h"
+#include "user_pages.h"
 
 static struct espconn esp_conn;
 static esp_tcp esptcp;
@@ -37,15 +38,18 @@ static void ICACHE_FLASH_ATTR tcp_server_sent_cb(void *arg)
 	os_printf("tcp sent cb \r\n");
 }
 
-struct page_data {
+// This structure link a page name and a protocol (GET/POST) to a function handler
+// FIXME to be moved.
+struct page_handler {
 	char page_name[32];
 	int method;
-	void (*handler)(void);
+	int (*handler)(struct header_html_recv *, struct espconn *);
 };
 
-struct html_page_handler[] = {
-		{ "wifi", METHOD_ALL, network_select_handler },
-		{ "connect", METHOD_ALL, connect_handler},
+// All html pages we can handle
+struct page_handler html_page_handler[] = {
+		{ "/wifi.html", METHOD_ALL, page_wifi },
+		{ "/connect.html", METHOD_POST, page_connect},
 };
 
 
@@ -57,70 +61,58 @@ struct html_page_handler[] = {
  *******************************************************************************/
 static void IRAM_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
-	struct header_html_recv html_content;
+	struct header_html_recv request;
 	char *m;
+	int i, err;
 	//received some data from tcp connection
 
 	struct espconn *pesp_conn = arg;
 
-	os_printf("tcp recv : %s \r\n", pusrdata);
+	os_printf("tcp data recv:\n%s\r\n", pusrdata);
 
 	// Extract from web page if this is a get or a push and which page is requested and the parameters of the page
-	if (process_header_recv(pusrdata, &html_content)) {
+	if (process_header_recv(pusrdata, &request)) {
 		os_printf("ERR: Error in extraction!\n");
 		return;
 	}
 
-	// Search spiffs for webpage
-	int pfd;
-	xSemaphoreTake( connect_sem, portMAX_DELAY );
-	os_printf("DBG: Start1 opening %s\n", html_content.page);
-	pfd = open(html_content.page, O_RDWR);
-	os_printf("DBG: End1 opening\n");
-	xSemaphoreGive( connect_sem );
+	os_printf("DBG: Request is:\n");
+	os_printf("DBG:   page name = %s\n",request.page_name);
+	os_printf("DBG:   method = %d\n",request.method);
+	os_printf("DBG:   key,value = %s, %s\n",request.form[0].key, request.form[0].value);
 
-	while ((strstr(html_content.page,"json") != 0) && (pfd < 3)) {
+	// Search function to call according to page_name and call the function which match.
+	for (i=0;i<sizeof(html_page_handler)/sizeof(struct page_handler);i++) {
+		int ret1 = strcmp(request.page_name, html_page_handler[i].page_name);
+		int ret2 = request.method & html_page_handler[i].method;
+		os_printf("DBG: %d %d\n", ret1, ret2);
+		if ( ret2 && (ret1 == 0 ) ) {
+/*		if ( (request.method & html_page_handler[i].method) && (strcmp(request.page_name, html_page_handler[i].page_name) == 0 ) ) {*/
+			err = html_page_handler[i].handler(&request, pesp_conn);
+			if (err)
+				html_render_template("404.html",pesp_conn);
+			return;
+		}
+	}
+
+	// Search for a file matching the page name
+	err = html_render_template(request.page_name, pesp_conn);
+
+	// We have found no matching page, so we should send 404.
+	if (err)
+		html_render_template("404.html",pesp_conn);
+
+/*
+	while ((strstr(request.page_name,"json") != 0) && (pfd < 3)) {
 		vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 0.5s
 		xSemaphoreTake( connect_sem, portMAX_DELAY );
-		os_printf("DBG: Start2 opening %s\n", html_content.page);
-		pfd = open(html_content.page, O_RDWR);
+		os_printf("DBG: Start2 opening %s\n", request.page_name);
+		pfd = open(request.page_name, O_RDWR);
 		xSemaphoreGive( connect_sem );
 		os_printf("DBG: End2 opening\n");
 	}
+*/
 
-	if (pfd < 3) {
-		os_printf("ERR: Can't open HTML file! %s\n", html_content.page);
-		// TODO return 404
-	} else {
-		if (html_content.post) {
-			os_printf("DBG: POST request\n");
-			if (strcmp(html_content.page,"/connect.html") == 0) {
-				process_network_choice(pusrdata);
-			}
-		}
-
-		// Read file
-		char *page;
-		page = calloc(20000, 1);
-		if (page == 0)
-			os_printf("ERR: cannot allocate memory for page!\n");
-
-		if (read(pfd, page, 20000) < 0)
-			os_printf("ERR: Can't read file %s!\n",html_content.page);
-		close(pfd);
-
-		// Add header
-		m = html_add_header(page);
-		free(page);
-
-//		os_printf("=================\n"
-//				"%s\n"
-//				"=================\n", m);
-
-		// Return data
-		espconn_send(pesp_conn, m, strlen(m));
-		free(m);
-	}
 
 
 //	if (strcmp(html_content.page,"/wifi.html") == 0) {

@@ -21,7 +21,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 #include "esp_common.h"
 #include "uart.h"
 
@@ -272,6 +271,21 @@ void IRAM_ATTR user_init(void) {
 
 #ifdef DEBUG
 //	gdbstub_init();
+#endif
+
+#ifdef TEST
+	os_printf("\n");
+	os_printf("~~~~~~~~~~~~~~~~~~~~~~\n");
+	os_printf("    TESTS STARTING\n");
+
+	test_header_html_post1();
+	test_header_html_post2();
+	test_header_html_get1();
+	test_header_html_get2();
+
+	os_printf("    TESTS COMPLETED\n");
+	os_printf("~~~~~~~~~~~~~~~~~~~~~~\n");
+	return;
 #endif
 
 	// Display product information
