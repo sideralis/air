@@ -59,7 +59,7 @@ struct page_handler html_page_handler[] = {
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-static void IRAM_ATTR tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
+static void tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
 	struct header_html_recv request;
 	char *m;

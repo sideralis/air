@@ -82,7 +82,7 @@ int extract_params(char *start, char *end, struct page_param *form)
 #define CONTENT_TYPE 		"Content-Type: "
 #define CONTENT_TYPE_VALUE 	"application/x-www-form-urlencoded"
 #define CONTENT_LENGTH		"Content-Length: "
-int IRAM_ATTR process_header_recv(char *pusrdata, struct header_html_recv *request)
+int process_header_recv(char *pusrdata, struct header_html_recv *request)
 {
 	char *pGP, *pHTTP, *pQuery, *pParam, *pContentType, *pContentLength, *pEnd;
 	int size;
@@ -202,7 +202,7 @@ char *html_add_header(char *page)
 	return m;
 }
 
-int IRAM_ATTR html_render_template(char *page_name, struct espconn *pesp_conn)
+int html_render_template(char *page_name, struct espconn *pesp_conn)
 {
 	int pfd;
 
@@ -246,8 +246,4 @@ int IRAM_ATTR html_render_template(char *page_name, struct espconn *pesp_conn)
 		free(m);
 		return 0;
 	}
-
-
-
-
 }

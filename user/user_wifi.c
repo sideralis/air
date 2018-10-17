@@ -17,10 +17,88 @@
 #include "user_wifi.h"
 #include "user_led.h"
 
-SLIST_HEAD(router_info_head, router_info) router_list;
+SLIST_HEAD(router_info_head, router_info) router_list, router_list_cleaned;	// Cleaned means duplicates removed and ordered by decreasing rssi
 uint8  current_channel;
 uint16 channel_bits;
 
+
+static void wifi_list_remove_duplicates(struct router_info_head *router_list, struct router_info_head *router_list_cleaned) {
+	int found_duplicate;
+	struct router_info *info1 = NULL, *info2 = NULL;
+
+	SLIST_FOREACH(info1, router_list, next) {
+		found_duplicate = false;
+		SLIST_FOREACH(info2, router_list_cleaned, next) {
+			if (strcmp(info1->ssid, info2->ssid) == 0) {
+				// This is a found_duplicate, let's replace it if rssi is better.
+				found_duplicate = true;
+				if (info1->rssi > info2->rssi) {
+					info2->rssi = info1->rssi;
+					info2->channel = info1->channel;
+					if (memcmp(info1->bssid, info2->bssid, 6) == 0)
+						os_printf("ERR: bssid should have been different!\n");
+					if (info1->authmode != info2->authmode)
+						os_printf("ERR: authmode should have matched!\n");
+				}
+			}
+		}
+		if (found_duplicate == false) {
+			// this is a new network, let's add it
+            info2 = (struct router_info *) zalloc(sizeof(struct router_info));
+            info2->authmode = info1->authmode;						// WIFI mode
+            info2->channel = info1->channel;							// WIFI channel
+            info2->rssi = info1->rssi;								// WIFI rssi
+            memcpy(info2->bssid, info1->bssid, 6);					// WIFI mac add
+			if (strlen(info1->ssid) <= 32)
+				memcpy(info2->ssid, info1->ssid, strlen(info1->ssid));
+			else
+				memcpy(info2->ssid, info1->ssid, 32);				// WIFI name
+
+			SLIST_INSERT_HEAD(router_list_cleaned, info2, next);
+		}
+	}
+}
+
+static void wifi_list_order(struct router_info_head *router_list, struct router_info_head *router_list_ordered) {
+	int inserted;
+	struct router_info *info1 = NULL, *info2 = NULL, *info3 = NULL, *info_insert = NULL;
+
+	SLIST_FOREACH(info1, router_list, next) {
+		inserted = false;
+		SLIST_FOREACH(info2, router_list_ordered, next) {
+			if (info2->rssi > info1->rssi) {
+				info_insert = info2;
+				inserted = true;
+			} else
+				break;
+		}
+        info3 = (struct router_info *) zalloc(sizeof(struct router_info));
+        info3->authmode = info1->authmode;						// WIFI mode
+        info3->channel = info1->channel;							// WIFI channel
+        info3->rssi = info1->rssi;								// WIFI rssi
+        memcpy(info3->bssid, info1->bssid, 6);					// WIFI mac add
+		if (strlen(info1->ssid) <= 32)
+			memcpy(info3->ssid, info1->ssid, strlen(info1->ssid));
+		else
+			memcpy(info3->ssid, info1->ssid, 32);				// WIFI name
+
+		if (inserted == false) {
+			SLIST_INSERT_HEAD(router_list_ordered, info3, next);
+		} else {
+			SLIST_INSERT_AFTER(info_insert, info3, next);
+		}
+	}
+}
+
+static void wifi_list_clear(struct router_info_head *router_list) {
+	struct router_info *info = NULL;
+	while ((info = SLIST_FIRST(router_list)) != NULL) {
+        SLIST_REMOVE_HEAD(router_list, next);
+        free(info);
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
 /**
  *
  */
@@ -84,17 +162,14 @@ void wifi_handle_event_cb(System_Event_t *evt)
 /**
  * Function which is called when wifi scan is completed
  */
-void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
+void wifi_scan_done(void *arg, STATUS status)
 {
-    struct router_info *info = NULL;
+    struct router_info *info = NULL, *info2 = NULL;
 	signed portBASE_TYPE ret;
 	int status_scan = WIFI_NOT_DETECTED;
 
     // Empty list
-    while ((info = SLIST_FIRST(&router_list)) != NULL) {
-        SLIST_REMOVE_HEAD(&router_list, next);
-        free(info);
-    }
+	wifi_list_clear(&router_list);
 
     if (status == OK) {
         uint8 i;
@@ -111,7 +186,8 @@ void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
         while (bss != NULL) {
             if (bss->channel != 0) {
                 struct router_info *info = NULL;
-                os_printf("DBG: ssid %s, channel %d, authmode %d, rssi %d\n", bss->ssid, bss->channel, bss->authmode, bss->rssi);
+                os_printf("DBG: ssid %s, channel %d, authmode %d, rssi %d bssid %0x%0x%0x%0x%0x%0x\n", bss->ssid, bss->channel, bss->authmode, bss->rssi,
+                		bss->bssid[0], bss->bssid[1], bss->bssid[2], bss->bssid[3], bss->bssid[4], bss->bssid[5]);
                 info = (struct router_info *) zalloc(sizeof(struct router_info));
                 info->authmode = bss->authmode;						// WIFI mode
                 info->channel = bss->channel;						// WIFI channel
@@ -126,7 +202,29 @@ void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
             }
             bss = STAILQ_NEXT(bss, next);
         }
-		// TODO remove duplicated networks
+		// Remove duplicated networks and, in a second step, order them, from router_list to router_list_cleaned then back to router_list
+//		os_printf("\n");
+//		SLIST_FOREACH(info, &router_list, next) {
+//			os_printf("DBG1: %s %i\n", info->ssid, info->channel);
+//		}
+
+		wifi_list_remove_duplicates(&router_list, &router_list_cleaned);
+//		os_printf("\n");
+//		SLIST_FOREACH(info, &router_list_cleaned, next) {
+//			os_printf("DBG2: %s %i\n", info->ssid, info->channel);
+//		}
+
+		wifi_list_clear(&router_list);
+		wifi_list_order(&router_list_cleaned, &router_list);
+
+//		os_printf("\n");
+//		SLIST_FOREACH(info, &router_list, next) {
+//			os_printf("DBG3: %s %i %d %d %0x%0x%0x%0x%0x%0x\n", info->ssid, info->channel, info->authmode, info->rssi,
+//					info->bssid[0], info->bssid[1], info->bssid[2], info->bssid[3], info->bssid[4], info->bssid[5]);
+//		}
+
+		wifi_list_clear(&router_list_cleaned);
+
         // Queue result
 		if (!(SLIST_EMPTY(&router_list))) {
 			char *buf;
@@ -161,7 +259,7 @@ void ICACHE_FLASH_ATTR wifi_scan_done(void *arg, STATUS status)
 		}
 
     } else {
-        os_printf("err, scan status %d\n", status);
+        os_printf("ERR: scan status %d\n", status);
     }
 	ret = xQueueSend(status_scan_queue, &status_scan, 0);
 	if (ret != pdPASS) {
@@ -234,3 +332,7 @@ void softap_task(void *param) {
 void stationap_task(void *param) {
 
 }
+
+// ----------------------------------------------------------------------------------------------
+
+

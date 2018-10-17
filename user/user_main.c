@@ -270,7 +270,7 @@ void IRAM_ATTR user_init(void) {
 	uart_init_new();
 
 #ifdef DEBUG
-//	gdbstub_init();
+//	gdbstub_init();							// Uncomment to enable debugging
 #endif
 
 #ifdef TEST
