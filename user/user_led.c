@@ -87,7 +87,7 @@ void task_led(void *param)
 
 			// Wait for a new command
 			xQueueReceive(led_queue, &led_setup, portMAX_DELAY);
-			printf("DBG: Receive led command - %d %d %d\n",led_setup.state,led_setup.color_to, led_setup.color_from );
+			os_printf("DBG: Receive led command - %d %d %d\n",led_setup.state,led_setup.color_to, led_setup.color_from );
 			led_state = led_setup.state;
 			led_color_to = led_setup.color_to;
 			led_color_from = led_setup.color_from;

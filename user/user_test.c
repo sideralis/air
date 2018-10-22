@@ -156,4 +156,38 @@ int test_header_html_get2() {
 		os_printf("Erreur valeur parametre 3\n");
 }
 
+//char *spiffs_file_name[] = {
+//		"/connect.html",
+//		"/favicon.ico",
+//		"/quatre.html",
+//		"/wifi.html",
+//		0				// End marker
+//};
+int test_spiffs() {
+	int pfd;
+	int i;
+
+	char *spiffs_file_name[] = {
+			"/connect.html",
+			"/favicon.ico",
+			"/quatre.html",
+			"/wifi.html",
+			0				// End marker
+	};
+
+	os_printf("Test opening files in spiffs image:\n");
+
+	// init
+	user_spiffs();
+
+	// Try to open all pages
+	for (i=0; spiffs_file_name[i] != 0; i++) {
+		pfd = open(spiffs_file_name[i], O_RDONLY);
+		os_printf("DBG: %d %d\n", i, pfd);
+		if (pfd < 3)
+			os_printf("Erreur a l'ouverture de %s\n", spiffs_file_name[i]);
+	}
+
+}
+
 #endif

@@ -26,15 +26,23 @@ int page_connect(struct header_html_recv *request, struct espconn *pesp_conn)
 {
 	// TODO: test with an empty password
 
-	struct station_config station_info;
+	struct station_config *station_info;
 
-	memset(&station_info, 0, sizeof(station_info));  //set value of config from address of &config to width of size to be value '0'
+	station_info = malloc(sizeof(struct station_config));
+	if (station_info == 0) {
+		os_printf("ERR: malloc %d %s\n",__LINE__, __FILE__);
+		return  -1;
+	}
 
-	strcpy(station_info.ssid, request->form[0].value);
-	strcpy(station_info.ssid, request->form[1].value);
+	memset(station_info, 0, sizeof(*station_info));  //set value of config from address of &config to width of size to be value '0'
+
+	strcpy(station_info->ssid, request->form[0].value);
+	strcpy(station_info->password, request->form[1].value);
 
 	// Send info for main task
-	xQueueSend(network_queue, &station_info, 0);
+	xQueueSend(network_queue, station_info, 0);
+
+	free(station_info);
 
 	return html_render_template(request->page_name, pesp_conn);
 }

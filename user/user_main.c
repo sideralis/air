@@ -130,6 +130,8 @@ void task_main(void *param)
 
     struct router_info *info = NULL;
 
+    printTaskInfo();
+
 	// Let's blink while we are not fully connected
 	led_setup.color_to = LED_WHITE;
 	led_setup.color_from = LED_BLACK;
@@ -143,7 +145,7 @@ void task_main(void *param)
 		// Get ap info
 		//wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);					// Get number of registered access points
-		printf("DBG: Data on station = %d\n", nb_ap);
+//		os_printf("DBG: Data on station = %d\n", nb_ap);
 		if (nb_ap < 500) {		//  FIXME should be == 0
 			// We have never connected to any network, let's scan for wifi
 			// Start task wifi scan
@@ -152,16 +154,16 @@ void task_main(void *param)
 			ret = xQueueReceive(wifi_scan_queue, &router_data, 10000 / portTICK_RATE_MS);			// Timeout after 10s
 			if (ret == errQUEUE_EMPTY) {
 				// No wifi detected
-				os_printf("DBG: No wifi dectected! Aborting!\n");									// TODO we should do something if there is no wifi
+				os_printf("INFO: No wifi dectected! Aborting!\n");									// TODO we should do something if there is no wifi
 			} else {
-				os_printf("DBG: Wifi dectected!\n");
+				os_printf("INFO: Wifi dectected!\n");
 
 				// Switch to SoftAP mode
 				xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
 				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
 
 				// Start TCP server
-				os_printf("DBG: Start TCP server\n");
+				os_printf("INFO: Starting TCP server\n");
 				user_tcpserver_init(SERVER_LOCAL_PORT);
 
 				// User is now suppose to connect to our network and select an access point
@@ -176,7 +178,7 @@ void task_main(void *param)
 				// Info on the selected network is in station_info variable
 				convert_UTF8_string(station_info.ssid);
 				convert_UTF8_string(station_info.password);
-				os_printf("DBG: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
+				os_printf("INFO: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
 
 				ret2 = wifi_station_set_config(&station_info);
 				if (ret2 == false)
@@ -195,7 +197,7 @@ void task_main(void *param)
 
 				// Wait for connection and ip
 				ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
-				os_printf("DBG: We should be connected now\n");
+				os_printf("INFO: We should be connected now\n");
 
 				// TODO indicate to user we are connected
 				// Write file
@@ -205,21 +207,21 @@ void task_main(void *param)
 				cJSON_AddItemToObject(connect_msg, "status", status);
 				buf = cJSON_Print(connect_msg);
 
-				os_printf("DBG: cJSON message:\n%s\n",buf);
+//				os_printf("DBG: cJSON message:\n%s\n",buf);
 
 				xSemaphoreTake( connect_sem, portMAX_DELAY );
-				os_printf("DBG: Start writing status_connect.json \n");
+//				os_printf("DBG: Start writing status_connect.json \n");
 				int pfd;
 				pfd = open("/status_connect.json", O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);			// TODO file must be also deleted
 				if (pfd <= 3) {
-					printf("ERR: open file error!\n");
+					os_printf("ERR: open file error!\n");
 				}
 				int write_byte = write(pfd, buf, strlen(buf));
 				if (write_byte <= 0) {
-					printf("ERR: write file error (status_connect.json) %d\n",write_byte);
+					os_printf("ERR: write file error (status_connect.json) %d\n",write_byte);
 				}
 				close(pfd);
-				os_printf("DBG: End writing status_connect.json \n");
+//				os_printf("DBG: End writing status_connect.json \n");
 				xSemaphoreGive( connect_sem );
 
 				free(buf);
@@ -233,7 +235,7 @@ void task_main(void *param)
 
 			}
 		} else {
-			printf("DBG: We have already connected to a network. Trying again...\n");
+			os_printf("DBG: We have already connected to a network. Trying again...\n");
 
 			// Wait for connection and ip
 			ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
@@ -282,6 +284,7 @@ void IRAM_ATTR user_init(void) {
 	test_header_html_post2();
 	test_header_html_get1();
 	test_header_html_get2();
+	test_spiffs();
 
 	os_printf("    TESTS COMPLETED\n");
 	os_printf("~~~~~~~~~~~~~~~~~~~~~~\n");
@@ -307,6 +310,7 @@ void IRAM_ATTR user_init(void) {
 	os_printf("DBG: AIR version: " AIR_VERSION " \n");
 	os_printf("DBG: MAC address: 0x%0x%0x\n", mac_high, mac_low);
 
+	printTaskInfo();
 
 	// Initialize spiffs
 	user_spiffs();

@@ -22,7 +22,7 @@ char charac7B[] = { '{', '|', '}', '~' };
 struct utf8dec utf_table[] = { { 0x20, 0x2f, charac20 }, { 0x3A, 0x40, charac3A }, { 0x5B, 0x60, charac5B }, { 0x7B, 0x7E, charac7B } };
 
 /* TODO: to be tested deeply */
-char convert_UTF8_ascii(char *str)
+static char convert_UTF8_ascii(char *str)
 {
 	char ret;
 	int code;

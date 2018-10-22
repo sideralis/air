@@ -61,80 +61,57 @@ struct page_handler html_page_handler[] = {
  *******************************************************************************/
 static void tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
-	struct header_html_recv request;
 	char *m;
 	int i, err;
-	//received some data from tcp connection
-
 	struct espconn *pesp_conn = arg;
 
-	os_printf("tcp data recv:\n%s\r\n", pusrdata);
+	struct header_html_recv *request;
 
-	// Extract from web page if this is a get or a push and which page is requested and the parameters of the page
-	if (process_header_recv(pusrdata, &request)) {
-		os_printf("ERR: Error in extraction!\n");
+	request = malloc(sizeof(struct header_html_recv));
+	if (request == 0) {
+		os_printf("ERR: malloc %d %f\n",__LINE__, __FILE__);
 		return;
 	}
 
+	//received some data from tcp connection
+
+	printTaskInfo();
+
+	//os_printf("tcp data recv:\n%s\r\n", pusrdata);
+
+	// Extract from web page if this is a get or a push and which page is requested and the parameters of the page
+	if (process_header_recv(pusrdata, request)) {
+		os_printf("ERR: extraction %d %f\n",__LINE__, __FILE__);
+		free(request);
+		return;
+	}
+
+/*
 	os_printf("DBG: Request is:\n");
 	os_printf("DBG:   page name = %s\n",request.page_name);
 	os_printf("DBG:   method = %d\n",request.method);
 	os_printf("DBG:   key,value = %s, %s\n",request.form[0].key, request.form[0].value);
+*/
 
 	// Search function to call according to page_name and call the function which match.
 	for (i=0;i<sizeof(html_page_handler)/sizeof(struct page_handler);i++) {
-		int ret1 = strcmp(request.page_name, html_page_handler[i].page_name);
-		int ret2 = request.method & html_page_handler[i].method;
-		os_printf("DBG: %d %d\n", ret1, ret2);
-		if ( ret2 && (ret1 == 0 ) ) {
-/*		if ( (request.method & html_page_handler[i].method) && (strcmp(request.page_name, html_page_handler[i].page_name) == 0 ) ) {*/
-			err = html_page_handler[i].handler(&request, pesp_conn);
+		if ( (request->method & html_page_handler[i].method) && (strcmp(request->page_name, html_page_handler[i].page_name) == 0 ) ) {
+			err = html_page_handler[i].handler(request, pesp_conn);
 			if (err)
 				html_render_template("404.html",pesp_conn);
+			free(request);
 			return;
 		}
 	}
 
 	// Search for a file matching the page name
-	err = html_render_template(request.page_name, pesp_conn);
+	err = html_render_template(request->page_name, pesp_conn);
 
 	// We have found no matching page, so we should send 404.
 	if (err)
 		html_render_template("404.html",pesp_conn);
 
-/*
-	while ((strstr(request.page_name,"json") != 0) && (pfd < 3)) {
-		vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 0.5s
-		xSemaphoreTake( connect_sem, portMAX_DELAY );
-		os_printf("DBG: Start2 opening %s\n", request.page_name);
-		pfd = open(request.page_name, O_RDWR);
-		xSemaphoreGive( connect_sem );
-		os_printf("DBG: End2 opening\n");
-	}
-*/
-
-
-
-//	if (strcmp(html_content.page,"/wifi.html") == 0) {
-//		if (html_content.get) {
-//			os_printf("DBG: A GET request\n");
-//			// We should display a status connected or not connected or error connection
-//			// We should then display a selection of network status to connect on
-//			m = display_network_choice();
-//			espconn_send(pesp_conn, m, strlen(m));
-//			free(m);
-//		} else {
-//			os_printf("DBG: A POST request\n");
-//			// Here we get the data back, so let's find the network and the password.
-//			process_network_choice(pusrdata);
-//			m = display_network_choosen();
-//			espconn_send(pesp_conn, m, strlen(m));
-//			free(m);
-//		}
-//	} else {
-//		display_404();
-//	}
-
+	free(request);
 }
 
 /******************************************************************************

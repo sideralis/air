@@ -37,6 +37,7 @@ static const char html_fmt[] ICACHE_RODATA_ATTR STORE_ATTR =
 int extract_key_value(char *start, char *end, struct page_param *form)
 {
 	char *pSep;
+
 	pSep = strchr(start,'=');
 	if (pSep == 0 || pSep >= end)
 		return -1;
@@ -82,13 +83,21 @@ int extract_params(char *start, char *end, struct page_param *form)
 #define CONTENT_TYPE 		"Content-Type: "
 #define CONTENT_TYPE_VALUE 	"application/x-www-form-urlencoded"
 #define CONTENT_LENGTH		"Content-Length: "
+#define MAX_SIZE_FOR_PAGE_AND_PARAMS	128
 int process_header_recv(char *pusrdata, struct header_html_recv *request)
 {
 	char *pGP, *pHTTP, *pQuery, *pParam, *pContentType, *pContentLength, *pEnd;
 	int size;
-	char page_and_params[128];
 	int query_nb = 0;
 	int i;
+
+	char *page_and_params;
+
+	page_and_params = malloc(MAX_SIZE_FOR_PAGE_AND_PARAMS);
+	if (page_and_params == 0) {
+		os_printf("ERR: malloc %d %s\n",__LINE__,__FILE__);
+		return -1;
+	}
 
 	// Let's clear request
 	request->method = 0;
@@ -105,18 +114,22 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 		pGP += 4;
 	} else {
 		pGP = strstr(pusrdata,"POST");
-		if (pGP == 0)
+		if (pGP == 0) {
+			free(page_and_params);
 			return -1;
+		}
 		request->method = METHOD_POST;
 		pGP += 5;
 	}
 	// Now get page name
 	pHTTP = strstr(pusrdata,"HTTP");
-	if (pHTTP == 0 || pHTTP < pGP +1)
+	if (pHTTP == 0 || pHTTP < pGP +1) {
+		free(page_and_params);
 		return -1;
+	}
 	size = pHTTP-pGP-1;
-	if (size > sizeof(page_and_params))
-		size = sizeof(page_and_params)-1;
+	if (size > MAX_SIZE_FOR_PAGE_AND_PARAMS)
+		size = MAX_SIZE_FOR_PAGE_AND_PARAMS-1;
 	memcpy(page_and_params, pGP, size);
 	page_and_params[size] = 0;
 
@@ -148,29 +161,38 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 		// Search for Content-type field
 		pContentType = strstr(pusrdata,CONTENT_TYPE);
 		if (pContentType != 0) {
-			if (strncmp(pContentType+sizeof(CONTENT_TYPE)-1,CONTENT_TYPE_VALUE, sizeof(CONTENT_TYPE_VALUE)-1) != 0)
+			if (strncmp(pContentType+sizeof(CONTENT_TYPE)-1,CONTENT_TYPE_VALUE, sizeof(CONTENT_TYPE_VALUE)-1) != 0) {
+				free(page_and_params);
 				return -1;			// Error type is 415
+			}
 		}
 		// Search for content length
 		pContentLength = strstr(pusrdata,CONTENT_LENGTH);
-		if (pContentLength == 0)
+		if (pContentLength == 0) {
+			free(page_and_params);
 			return -1;
+		}
 		pContentLength += sizeof(CONTENT_LENGTH)-1;
 		pEnd = strstr(pContentLength, "\r\n");
-		if (pEnd == 0)
+		if (pEnd == 0) {
+			free(page_and_params);
 			return -1;
+		}
 		strncpy(page_and_params,pContentLength,pEnd-pContentLength);
 		page_and_params[pEnd-pContentLength] = 0;
 		size = atoi(page_and_params);
 
 		// Extract parameters from body if any
 		if (size == 0) {
-			if (pContentType != 0)
+			if (pContentType != 0) {
+				free(page_and_params);
 				return -1;
+			}
 		} else {
 			// Search for parameters, e.g. for an empty line
 			pParam = strstr(pContentLength,"\r\n\r\n");
 			if (pParam == 0) {
+				free(page_and_params);
 				return -1;
 			}
 			pParam += 4;		// to skip the empty line
@@ -178,6 +200,7 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 			extract_params(pParam, pParam+size, request->form);
 		}
 	}
+	free(page_and_params);
 	return 0;
 }
 
@@ -206,9 +229,11 @@ int html_render_template(char *page_name, struct espconn *pesp_conn)
 {
 	int pfd;
 
+	printTaskInfo();
+
 	xSemaphoreTake( connect_sem, portMAX_DELAY );
 	os_printf("INFO: Try opening page from spiffs %s\n", page_name);
-	pfd = open(page_name, O_RDWR);
+	pfd = open(page_name, O_RDONLY);
 	xSemaphoreGive( connect_sem );
 
 	if (pfd < 3) {
@@ -219,13 +244,13 @@ int html_render_template(char *page_name, struct espconn *pesp_conn)
 
 		// Read file
 		char *page, *m;
-		page = calloc(20000, 1);
+		page = calloc(2048, 1);					// FIXME hard coded size
 		if (page == 0) {
 			os_printf("ERR: cannot allocate memory for page!\n");
 			return -1;
 		}
 
-		if (read(pfd, page, 20000) < 0) {
+		if (read(pfd, page, 2048) < 0) {
 			os_printf("ERR: Can't read file %s!\n", page_name);
 			close(pfd);
 			free(page);
@@ -236,10 +261,6 @@ int html_render_template(char *page_name, struct espconn *pesp_conn)
 		// Add header
 		m = html_add_header(page);
 		free(page);
-
-//		os_printf("=================\n"
-//				"%s\n"
-//				"=================\n", m);
 
 		// Return data
 		espconn_send(pesp_conn, m, strlen(m));

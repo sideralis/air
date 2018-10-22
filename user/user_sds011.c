@@ -191,7 +191,7 @@ void task_sds011(void *param) {
 	uint32 frc2_ctrl;
 
 	frc2_ctrl = READ_PERI_REG(FRC2_CTRL_ADDRESS);
-	printf("FRC2 ctrl = 0x%x\n", frc2_ctrl);
+	os_printf("FRC2 ctrl = 0x%x\n", frc2_ctrl);
 
 	/* Attempt to create a semaphore. */
 	vSemaphoreCreateBinary(semaphore_uart_start);
