@@ -12,6 +12,10 @@
 #define METHOD_POST 	0b10
 #define METHOD_ALL		0b11
 
+#define AIR_SERVER_IP 	{95, 123, 99, 121}			// This is the ip address of our server.
+
+#define MAX_LENGHT_USER_ID	64						// Max length for storing email address of user
+
 // The parameters given with a page (found in the page name for a GET and in content for a POST)
 struct page_param {
 	char key[16];

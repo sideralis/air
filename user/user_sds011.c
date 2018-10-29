@@ -26,35 +26,37 @@ uint32 frc2_before, frc2_after;
 /* Functions */
 
 // Interrupt on falling edge
-static void gpio_interrupt_edge(void *arg) {
+static void gpio_interrupt_edge(void *arg)
+{
 	signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
 	frc2_before = READ_PERI_REG(FRC2_COUNT_ADDRESS);
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(0),1);
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(0), 1);
 
 	uint32 status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);          //READ STATUS OF INTERRUPT
-    static uint8 val = 0;
+	static uint8 val = 0;
 
-    if (status & GPIO_Pin_5) {
-    	xSemaphoreGiveFromISR(semaphore_uart_start, &xHigherPriorityTaskWoken);
-    	if (xHigherPriorityTaskWoken)
-    		PendSV(1);
-    }
+	if (status & GPIO_Pin_5) {
+		xSemaphoreGiveFromISR(semaphore_uart_start, &xHigherPriorityTaskWoken);
+		if (xHigherPriorityTaskWoken)
+			PendSV(1);
+	}
 
-    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, status);       //CLEAR THE STATUS IN THE W1 INTERRUPT REGISTER
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(0),0);
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, status);       //CLEAR THE STATUS IN THE W1 INTERRUPT REGISTER
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(0), 0);
 }
-int sm_data(int state, int bit, char *data) {
+int sm_data(int state, int bit, char *data)
+{
 	static int bit_idx;
 	static int timeout = 0;
-	switch(state) {
+	switch (state) {
 	case UART_START:
 		if (bit == 0) {
 			// Correct start bit, next step is to get data
 			state = UART_DATA;
 			bit_idx = 0;
 			*data = 0;
-			GPIO_OUTPUT_SET(GPIO_ID_PIN(4),1);
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(4), 1);
 		} else {
 			// We are still in idle, start bit should come.
 			timeout++;
@@ -63,13 +65,13 @@ int sm_data(int state, int bit, char *data) {
 		}
 		break;
 	case UART_DATA:
-			*data |= (bit << bit_idx);
-			bit_idx += 1;
-			if (bit_idx == 8) {
-				// Last bit received, next step is stop bit
-				state = UART_STOP;
-				GPIO_OUTPUT_SET(GPIO_ID_PIN(4),0);
-			}
+		*data |= (bit << bit_idx);
+		bit_idx += 1;
+		if (bit_idx == 8) {
+			// Last bit received, next step is stop bit
+			state = UART_STOP;
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(4), 0);
+		}
 		break;
 	case UART_STOP:
 		if (bit == 1) {
@@ -84,28 +86,30 @@ int sm_data(int state, int bit, char *data) {
 	}
 	return state;
 }
-int check_and_decode(uint8 *data, uint32 *pm25, uint32 *pm10) {
+int check_and_decode(uint8 *data, uint32 *pm25, uint32 *pm10)
+{
 	int err;
 	uint8 checksum;
 	if (data[0] != 0xaa || data[1] != 0xc0 || data[9] != 0xab) {
 		return -1;
 	}
-	checksum = data[2]+data[3]+data[4]+data[5]+data[6]+data[7];
+	checksum = data[2] + data[3] + data[4] + data[5] + data[6] + data[7];
 	if (checksum != data[8])
 		return -2;
 	*pm25 = data[3];
-	*pm25 <<=8;
+	*pm25 <<= 8;
 	*pm25 += data[2];
 	*pm10 = data[5];
-	*pm10 <<=8;
+	*pm10 <<= 8;
 	*pm10 += data[4];
 
 	return 0;
 }
-void task_data_read(void *param) {
+void task_data_read(void *param)
+{
 	signed portBASE_TYPE ret;
 	uint32 bit_val, bit_idx;
-	int i,received_data;
+	int i, received_data;
 	uint32 delta, target;
 	uint32 delay;
 	uint8 sds011[10];
@@ -115,20 +119,20 @@ void task_data_read(void *param) {
 	for (;;) {
 		// Wait for interrupt (should be start bit)
 		ret = xSemaphoreTake(semaphore_uart_start, portMAX_DELAY);
-    	ETS_GPIO_INTR_DISABLE();
-    	vTaskSuspendAll();
+		ETS_GPIO_INTR_DISABLE();
+		vTaskSuspendAll();
 //		os_delay_us(52);
-    	received_data = 0;
+		received_data = 0;
 		state_machine = UART_START;
-		delay = 102-16;
+		delay = 102 - 16;
 		bit_idx = 0;
 		do {
-			GPIO_OUTPUT_SET(GPIO_ID_PIN(2),1);
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(2), 1);
 			bit_val = gpio_input_get();
 			bit_val >>= GPIO_ID_PIN(5);
 			bit_val &= 0b1;
-			state_machine = sm_data(state_machine,bit_val,&sds011[received_data]);
-			GPIO_OUTPUT_SET(GPIO_ID_PIN(2),0);
+			state_machine = sm_data(state_machine, bit_val, &sds011[received_data]);
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(2), 0);
 			if (state_machine == UART_STOP)
 				received_data += 1;
 			else if (state_machine == UART_ERROR)
@@ -137,42 +141,41 @@ void task_data_read(void *param) {
 			// Calculate time to wait
 			frc2_after = READ_PERI_REG(FRC2_COUNT_ADDRESS);
 			if (frc2_after > frc2_before) {
-				target = frc2_before*100 + 20000 + bit_idx*52083;		// 20000 is the initial offset (theoretically it should be half of a bit duration) but it is less due to time between interrupt and this point
-				delta = target - frc2_after*100;
-				delay = delta <<  4;
+				target = frc2_before * 100 + 20000 + bit_idx * 52083;// 20000 is the initial offset (theoretically it should be half of a bit duration) but it is less due to time between interrupt and this point
+				delta = target - frc2_after * 100;
+				delay = delta << 4;
 				delay /= 8000;
 			}
 			os_delay_us(delay);
-		} while (received_data<10);
+		} while (received_data < 10);
 		xTaskResumeAll();
 		if (state_machine == UART_ERROR) {
-			GPIO_OUTPUT_SET(GPIO_ID_PIN(14),1);
-			os_printf("Frame error!\n");
-			GPIO_OUTPUT_SET(GPIO_ID_PIN(14),0);
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 1);
+			os_printf("ERR: Frame error!\n");
+			GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 0);
 			vTaskDelay(500 / portTICK_RATE_MS);		// Wait 0.5s
 		} else {
 
-			for (i=0;i<10;i++) {
-				os_printf("0x%x ", sds011[i]/*(frc2_count[i]-frc2_count[i-1])*16/80*/);
+			for (i = 0; i < 10; i++) {
+				os_printf("DBG: 0x%x ", sds011[i]/*(frc2_count[i]-frc2_count[i-1])*16/80*/);
 			}
 			os_printf("\n");
 			i = check_and_decode(sds011, &pm25, &pm10);
 			if (i == -1) {
-				GPIO_OUTPUT_SET(GPIO_ID_PIN(14),1);
-				os_printf("Erreur header!\n");
-				GPIO_OUTPUT_SET(GPIO_ID_PIN(14),0);
+				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 1);
+				os_printf("ERR: header!\n");
+				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 0);
 			} else if (i == -2) {
-				GPIO_OUTPUT_SET(GPIO_ID_PIN(14),1);
-				os_printf("Erreur checksum!\n");
-				GPIO_OUTPUT_SET(GPIO_ID_PIN(14),0);
+				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 1);
+				os_printf("ERR: checksum!\n");
+				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 0);
 			} else {
-				os_printf("PM2.5 = %d -- PM10 = %d\n",pm25, pm10);
+				os_printf("INFO: PM2.5 = %d -- PM10 = %d\n", pm25, pm10);
 			}
 		}
 
-
 		/* Re enable GPIO interrupt to get next data */
-	    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, 0xffff);       // Clear all GPIO pending interrupt
+		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, 0xffff);       // Clear all GPIO pending interrupt
 		ETS_GPIO_INTR_ENABLE();
 
 	}
@@ -184,19 +187,20 @@ void task_data_read(void *param) {
 // GND = GND
 // RX = D2
 // TX = D1
-void task_sds011(void *param) {
+void task_sds011(void *param)
+{
 	signed portBASE_TYPE ret;
 	GPIO_ConfigTypeDef io_out_conf;
 
 	uint32 frc2_ctrl;
 
 	frc2_ctrl = READ_PERI_REG(FRC2_CTRL_ADDRESS);
-	os_printf("FRC2 ctrl = 0x%x\n", frc2_ctrl);
+	os_printf("DBG: FRC2 ctrl = 0x%x\n", frc2_ctrl);
 
 	/* Attempt to create a semaphore. */
 	vSemaphoreCreateBinary(semaphore_uart_start);
 	if (semaphore_uart_start == NULL) {
-		os_printf("Err: Can not create semaphore!\n");
+		os_printf("ERR: Can not create semaphore!\n");
 		return;
 	}
 	// Take semaphore, will be released by interrupt
@@ -209,7 +213,7 @@ void task_sds011(void *param) {
 	io_out_conf.GPIO_Pullup = GPIO_PullUp_DIS;
 	gpio_config(&io_out_conf);
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(14),0);
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 0);
 
 	// configure D4 pad to GPIO ouput mode			// For DBG only!
 	io_out_conf.GPIO_IntrType = GPIO_PIN_INTR_DISABLE;
@@ -218,7 +222,7 @@ void task_sds011(void *param) {
 	io_out_conf.GPIO_Pullup = GPIO_PullUp_DIS;
 	gpio_config(&io_out_conf);
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(2),0);
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(2), 0);
 
 	// configure D3 pad to GPIO ouput mode			// For DBG only!
 	io_out_conf.GPIO_IntrType = GPIO_PIN_INTR_DISABLE;
@@ -227,7 +231,7 @@ void task_sds011(void *param) {
 	io_out_conf.GPIO_Pullup = GPIO_PullUp_DIS;
 	gpio_config(&io_out_conf);
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(0),0);
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(0), 0);
 
 	// configure D2 pad to GPIO ouput mode
 	io_out_conf.GPIO_IntrType = GPIO_PIN_INTR_DISABLE;
@@ -236,7 +240,7 @@ void task_sds011(void *param) {
 	io_out_conf.GPIO_Pullup = GPIO_PullUp_DIS;
 	gpio_config(&io_out_conf);
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(4),0);
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(4), 0);
 
 	// configure D1 pad to GPIO input mode and get interrupt when falling edge
 	io_out_conf.GPIO_IntrType = GPIO_PIN_INTR_NEGEDGE;

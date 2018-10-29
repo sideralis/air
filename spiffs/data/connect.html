@@ -3,22 +3,55 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title></title>
+    <style>
+		.loader {
+		  border: 16px solid #f3f3f3;
+		  border-radius: 50%;
+		  border-top: 16px solid #3498db;
+		  width: 120px;
+		  height: 120px;
+		  -webkit-animation: spin 2s linear infinite; /* Safari */
+		  animation: spin 2s linear infinite;
+		}
+		
+		/* Safari */
+		@-webkit-keyframes spin {
+		  0% { -webkit-transform: rotate(0deg); }
+		  100% { -webkit-transform: rotate(360deg); }
+		}
+		
+		@keyframes spin {
+		  0% { transform: rotate(0deg); }
+		  100% { transform: rotate(360deg); }
+		}
+	</style>    
   </head>
-  <body>
-    <p id="msg">Please wait for led on then</p>
-    <p>Press one of this 2 buttons:</p>
-    <p><button onclick="connected();" name="blinkingLed">Led is blinking</button></p>
-    <p><button onclick="not_connected();" name="notBlinkingLed">Led is not
-        blinking</button> </p>
-    <script>
-      function notConnected() {
-      	document.getDocumentById("msg").innerHTML = "Your are not connected. Please try again";
-				window.location.href= "http://192.168.1.23/reconnect.html"
-      }
-      function connected() {
-        document.getDocumentById("msg").innerHTML = "Your are now connected. Redirecting to main page";
-				window.location.href= "http://192.168.1.23/data.html"
-      }
-    </script>
+  <body onload=waitForDisconnect()>
+    <h3>Please wait while we are trying to connect your device to internet</h3> 
+	<div class="loader"></div>
   </body>
+  <script>
+  	var timeout;
+	function waitForDisconnect() {
+		// Wait 3 seconds before testing internet (air network should have disappeared by then)
+		timeout = 10;
+		myVar = setTimeout(checkInternet, 3000);
+	}
+	function checkInternet() {
+		var isOnLine = navigator.onLine;
+		if (isOnLine) {
+			myVar = setTimeout(internetIsUp, 3000);
+		} else {
+			timeout = timeout - 1;
+			if (timeout) {
+				myVar = setTimeout(checkInternet, 1000);
+			} else {
+				alert("Could not connect to internet!");	
+			}
+		}
+	}
+	function internetIsUp() {
+		alert("You are now connected to internet!");
+	}
+  </script>
 </html>

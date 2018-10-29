@@ -21,7 +21,7 @@
 
 /* Constants */
 static const char html_fmt[] ICACHE_RODATA_ATTR STORE_ATTR =
-		"HTTP/1.1 200 OK\r\n"
+"HTTP/1.1 200 OK\r\n"
 		"Content-length: %d\r\n"
 		"Content-Type: text/html\r\n"
 		"\r\n"
@@ -38,17 +38,17 @@ int extract_key_value(char *start, char *end, struct page_param *form)
 {
 	char *pSep;
 
-	pSep = strchr(start,'=');
+	pSep = strchr(start, '=');
 	if (pSep == 0 || pSep >= end)
 		return -1;
-	if ((pSep-start) > sizeof(form->key)-1)
+	if ((pSep - start) > sizeof(form->key) - 1)
 		return -1;
-	strncpy(form->key,start,pSep-start);
-	form->key[pSep-start] = 0;
-	if ((end-(pSep+1)) > sizeof(form->value)-1)
+	strncpy(form->key, start, pSep - start);
+	form->key[pSep - start] = 0;
+	if ((end - (pSep + 1)) > sizeof(form->value) - 1)
 		return -1;
-	strncpy(form->value,pSep+1,end-(pSep+1));
-	form->value[end-(pSep+1)] = 0;
+	strncpy(form->value, pSep + 1, end - (pSep + 1));
+	form->value[end - (pSep + 1)] = 0;
 
 	return 0;
 }
@@ -63,14 +63,14 @@ int extract_params(char *start, char *end, struct page_param *form)
 	int i = 0;
 	int ret;
 
-	pParam = strchr(start,'&');
+	pParam = strchr(start, '&');
 	while (pParam != 0 && pParam < end) {
 		ret = extract_key_value(start, pParam, &form[i]);
 		if (ret)
 			return ret;
 		i += 1;
-		start = pParam+1;
-		pParam = strchr(start,'&');
+		start = pParam + 1;
+		pParam = strchr(start, '&');
 	}
 	// Last parameters
 	ret = extract_key_value(start, end, &form[i]);
@@ -95,25 +95,25 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 
 	page_and_params = malloc(MAX_SIZE_FOR_PAGE_AND_PARAMS);
 	if (page_and_params == 0) {
-		os_printf("ERR: malloc %d %s\n",__LINE__,__FILE__);
+		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 		return -1;
 	}
 
 	// Let's clear request
 	request->method = 0;
 	request->page_name[0] = 0;
-	for (i=0;i<sizeof(request->form)/sizeof(request->form[0]);i++) {
+	for (i = 0; i < sizeof(request->form) / sizeof(request->form[0]); i++) {
 		request->form[i].key[0] = 0;
 		request->form[i].value[0] = 0;
 	}
 
 	// First find method used
-	pGP = strstr(pusrdata,"GET");
+	pGP = strstr(pusrdata, "GET");
 	if (pGP != 0) {
 		request->method = METHOD_GET;
 		pGP += 4;
 	} else {
-		pGP = strstr(pusrdata,"POST");
+		pGP = strstr(pusrdata, "POST");
 		if (pGP == 0) {
 			free(page_and_params);
 			return -1;
@@ -122,64 +122,64 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 		pGP += 5;
 	}
 	// Now get page name
-	pHTTP = strstr(pusrdata,"HTTP");
-	if (pHTTP == 0 || pHTTP < pGP +1) {
+	pHTTP = strstr(pusrdata, "HTTP");
+	if (pHTTP == 0 || pHTTP < pGP + 1) {
 		free(page_and_params);
 		return -1;
 	}
-	size = pHTTP-pGP-1;
+	size = pHTTP - pGP - 1;
 	if (size > MAX_SIZE_FOR_PAGE_AND_PARAMS)
-		size = MAX_SIZE_FOR_PAGE_AND_PARAMS-1;
+		size = MAX_SIZE_FOR_PAGE_AND_PARAMS - 1;
 	memcpy(page_and_params, pGP, size);
 	page_and_params[size] = 0;
 
 	// Now get parameter key and value
 	if (request->method == METHOD_GET) {
 		// Method GET: parameters are in the page name after character '?'
-		pQuery = strchr(page_and_params,'?');
+		pQuery = strchr(page_and_params, '?');
 		if (pQuery == 0) {
 			// No parameter, just copy the page name.
-			page_and_params[sizeof(request->page_name)-1] = 0;			// Page name can't be longer than 31 characters
+			page_and_params[sizeof(request->page_name) - 1] = 0;			// Page name can't be longer than 31 characters
 			strcpy(request->page_name, page_and_params);
 		} else {
 			// Some parameter, just copy the page name.
-			strncpy(request->page_name, page_and_params, pQuery-page_and_params);
-			request->page_name[pQuery-page_and_params] = 0;
+			strncpy(request->page_name, page_and_params, pQuery - page_and_params);
+			request->page_name[pQuery - page_and_params] = 0;
 
 			// Now let's find the end of the query
-			pEnd = strchr(pQuery,'#');
+			pEnd = strchr(pQuery, '#');
 			if (pEnd == 0) {
-				pEnd = pQuery+strlen(pQuery);
+				pEnd = pQuery + strlen(pQuery);
 			}
 			// To continue find the length.
-			extract_params(pQuery+1,pEnd,request->form);
+			extract_params(pQuery + 1, pEnd, request->form);
 		}
 	} else {
 		// Method POST: parameters are in data
 		// First store the page name
 		strcpy(request->page_name, page_and_params);
 		// Search for Content-type field
-		pContentType = strstr(pusrdata,CONTENT_TYPE);
+		pContentType = strstr(pusrdata, CONTENT_TYPE);
 		if (pContentType != 0) {
-			if (strncmp(pContentType+sizeof(CONTENT_TYPE)-1,CONTENT_TYPE_VALUE, sizeof(CONTENT_TYPE_VALUE)-1) != 0) {
+			if (strncmp(pContentType + sizeof(CONTENT_TYPE) - 1, CONTENT_TYPE_VALUE, sizeof(CONTENT_TYPE_VALUE) - 1) != 0) {
 				free(page_and_params);
 				return -1;			// Error type is 415
 			}
 		}
 		// Search for content length
-		pContentLength = strstr(pusrdata,CONTENT_LENGTH);
+		pContentLength = strstr(pusrdata, CONTENT_LENGTH);
 		if (pContentLength == 0) {
 			free(page_and_params);
 			return -1;
 		}
-		pContentLength += sizeof(CONTENT_LENGTH)-1;
+		pContentLength += sizeof(CONTENT_LENGTH) - 1;
 		pEnd = strstr(pContentLength, "\r\n");
 		if (pEnd == 0) {
 			free(page_and_params);
 			return -1;
 		}
-		strncpy(page_and_params,pContentLength,pEnd-pContentLength);
-		page_and_params[pEnd-pContentLength] = 0;
+		strncpy(page_and_params, pContentLength, pEnd - pContentLength);
+		page_and_params[pEnd - pContentLength] = 0;
 		size = atoi(page_and_params);
 
 		// Extract parameters from body if any
@@ -190,14 +190,14 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 			}
 		} else {
 			// Search for parameters, e.g. for an empty line
-			pParam = strstr(pContentLength,"\r\n\r\n");
+			pParam = strstr(pContentLength, "\r\n\r\n");
 			if (pParam == 0) {
 				free(page_and_params);
 				return -1;
 			}
 			pParam += 4;		// to skip the empty line
 
-			extract_params(pParam, pParam+size, request->form);
+			extract_params(pParam, pParam + size, request->form);
 		}
 	}
 	free(page_and_params);
@@ -212,7 +212,7 @@ char *html_add_header(char *page)
 	int fmtsize = GET_ALIGN_STRING_LEN(html_fmt);
 	fmt = (char *) malloc(fmtsize);
 	if (fmt == 0) {
-		os_printf("Cannot allocate memory to send html answer!\n");
+		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 		return 0;
 	}
 	system_get_string_from_flash(html_fmt, fmt, fmtsize);
@@ -225,16 +225,14 @@ char *html_add_header(char *page)
 	return m;
 }
 
-int html_render_template(char *page_name, struct espconn *pesp_conn)
+int IRAM_ATTR html_render_template(char *page_name, struct espconn *pesp_conn)
 {
 	int pfd;
 
-	printTaskInfo();
-
-	xSemaphoreTake( connect_sem, portMAX_DELAY );
+	xSemaphoreTake(connect_sem, portMAX_DELAY);
 	os_printf("INFO: Try opening page from spiffs %s\n", page_name);
 	pfd = open(page_name, O_RDONLY);
-	xSemaphoreGive( connect_sem );
+	xSemaphoreGive(connect_sem);
 
 	if (pfd < 3) {
 		os_printf("ERR: Can't open HTML file! %s\n", page_name);
@@ -246,7 +244,7 @@ int html_render_template(char *page_name, struct espconn *pesp_conn)
 		char *page, *m;
 		page = calloc(2048, 1);					// FIXME hard coded size
 		if (page == 0) {
-			os_printf("ERR: cannot allocate memory for page!\n");
+			os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 			return -1;
 		}
 
@@ -264,6 +262,7 @@ int html_render_template(char *page_name, struct espconn *pesp_conn)
 
 		// Return data
 		espconn_send(pesp_conn, m, strlen(m));
+		os_printf("INFO: tcp data sent\n");
 		free(m);
 		return 0;
 	}

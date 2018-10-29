@@ -46,7 +46,6 @@
 #include "user_queue.h"
 #include "user_wifi.h"
 
-
 /* Defines */
 #define AIR_VERSION			"0.0.3"
 #define SERVER_LOCAL_PORT   80
@@ -58,13 +57,14 @@ void task_wifi_scan(void *);
 void softap_task(void *);
 void station_task(void *);
 
-void user_tcpserver_init(uint32 );
+void user_tcpserver_init(uint32);
 void user_set_softap_config();
 
 void user_mdns_config();
 
 /* Global */
 SLIST_HEAD(router_info_head, router_info) router_data;
+u8_t mac[NETIF_MAX_HWADDR_LEN];
 
 /* Functions */
 
@@ -80,7 +80,8 @@ SLIST_HEAD(router_info_head, router_info) router_data;
  * Parameters   : none
  * Returns      : rf cal sector
  *******************************************************************************/
-uint32 user_rf_cal_sector_set(void) {
+uint32 user_rf_cal_sector_set(void)
+{
 	flash_size_map size_map = system_get_flash_size_map();
 	uint32 rf_cal_sec = 0;
 
@@ -121,16 +122,14 @@ void task_main(void *param)
 	bool ret2;
 	int got_ip;
 	int nb_ap;								// Nb of ap air can connect to
-	struct station_config config[5];		// Information on these ap
+	struct station_config config[5];		// Information on these ap			// FIXME replace by malloc
 	struct led_info led_setup;
 	signed portBASE_TYPE ret;
 	struct bss_info *wifi_scan;
 	xTaskHandle handle_task_wifi;
 	struct station_config station_info;
 
-    struct router_info *info = NULL;
-
-    printTaskInfo();
+	struct router_info *info = NULL;
 
 	// Let's blink while we are not fully connected
 	led_setup.color_to = LED_WHITE;
@@ -141,11 +140,10 @@ void task_main(void *param)
 	// Register wifi call back function
 	wifi_set_event_handler_cb(wifi_handle_event_cb);
 
-	while(1) {
+	while (1) {
 		// Get ap info
 		//wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);					// Get number of registered access points
-//		os_printf("DBG: Data on station = %d\n", nb_ap);
 		if (nb_ap < 500) {		//  FIXME should be == 0
 			// We have never connected to any network, let's scan for wifi
 			// Start task wifi scan
@@ -159,11 +157,12 @@ void task_main(void *param)
 				os_printf("INFO: Wifi dectected!\n");
 
 				// Switch to SoftAP mode
-				xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
+				xTaskCreate(softap_task, "softap_task", 500, NULL, 6, NULL);
 				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
 
 				// Start TCP server
 				os_printf("INFO: Starting TCP server\n");
+				global_tcpclient = false;
 				user_tcpserver_init(SERVER_LOCAL_PORT);
 
 				// User is now suppose to connect to our network and select an access point
@@ -171,25 +170,25 @@ void task_main(void *param)
 				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);
 
 				// Switch back to station mode
-				xTaskCreate(station_task,"station_task",500,NULL,6,NULL);
+				xTaskCreate(station_task, "station_task", 500, NULL, 6, NULL);
 				vTaskDelay(1000 / portTICK_RATE_MS);		// Wait 1s
 
-			    // User has now selected network, let's try to connect to it:
+				// User has now selected network, let's try to connect to it:
 				// Info on the selected network is in station_info variable
 				convert_UTF8_string(station_info.ssid);
 				convert_UTF8_string(station_info.password);
-				os_printf("INFO: After UTF8 conversion - Trying to connect to: %s with password: %s\n",station_info.ssid, station_info.password);
+				os_printf("INFO: After UTF8 conversion - Trying to connect to: %s with password: %s\n", station_info.ssid, station_info.password);
 
 				ret2 = wifi_station_set_config(&station_info);
 				if (ret2 == false)
 					os_printf("ERR: Can not set station config!\n");
 
-			    if(!wifi_station_dhcpc_status()){
-			        os_printf("ERR: DHCP is not started. Starting it...\n");
-			        if(!wifi_station_dhcpc_start()){
-			            os_printf("ERR: DHCP start failed!\n");
-			        }
-			    }
+				if (!wifi_station_dhcpc_status()) {
+					os_printf("ERR: DHCP is not started. Starting it...\n");
+					if (!wifi_station_dhcpc_start()) {
+						os_printf("ERR: DHCP start failed!\n");
+					}
+				}
 
 				ret2 = wifi_station_connect();
 				if (ret2 == false)
@@ -199,39 +198,15 @@ void task_main(void *param)
 				ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
 				os_printf("INFO: We should be connected now\n");
 
-				// TODO indicate to user we are connected
-				// Write file
-				char *buf;
-				cJSON *connect_msg = cJSON_CreateObject();				// FIXME check if wifi_list == NULL
-				cJSON *status = cJSON_CreateString("connected");
-				cJSON_AddItemToObject(connect_msg, "status", status);
-				buf = cJSON_Print(connect_msg);
-
-//				os_printf("DBG: cJSON message:\n%s\n",buf);
-
-				xSemaphoreTake( connect_sem, portMAX_DELAY );
-//				os_printf("DBG: Start writing status_connect.json \n");
-				int pfd;
-				pfd = open("/status_connect.json", O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);			// TODO file must be also deleted
-				if (pfd <= 3) {
-					os_printf("ERR: open file error!\n");
-				}
-				int write_byte = write(pfd, buf, strlen(buf));
-				if (write_byte <= 0) {
-					os_printf("ERR: write file error (status_connect.json) %d\n",write_byte);
-				}
-				close(pfd);
-//				os_printf("DBG: End writing status_connect.json \n");
-				xSemaphoreGive( connect_sem );
-
-				free(buf);
-
 				// Switch off led to indicate we are connected to station
 				led_setup.color_to = LED_WHITE;
 				led_setup.state = LED_OFF;
 				xQueueSend(led_queue, &led_setup, 0);
 
-				// Display data
+				// Register the device to the user
+				os_printf("INFO: Send message to register device\n");
+				global_tcpclient = true;							// FIXME replace by something stronger
+				tcpserver_disconnect_and_tcpclient_connect();
 
 			}
 		} else {
@@ -251,22 +226,18 @@ void task_main(void *param)
 	}
 }
 
-
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
  * Parameters   : none
  * Returns      : none
  *******************************************************************************/
-void IRAM_ATTR user_init(void) {
+void IRAM_ATTR user_init(void)
+{
 
 	int led_type = LED_TYPE_RGB;
 	bool ret;
-	u8_t mac[NETIF_MAX_HWADDR_LEN];
-	u32 mac_high, mac_low;
 	int i;
-	long long_data = 1L;
-	long long llong_data = 1LL;
 
 	// Reconfigure UART to 115200 bauds
 	uart_init_new();
@@ -295,22 +266,11 @@ void IRAM_ATTR user_init(void) {
 	ret = wifi_get_macaddr(STATION_IF, mac);
 	if (ret == false)
 		os_printf("ERR: Can not get MAC address!\n");
-	mac_high = mac_low = 0;
-	for (i=0;i<NETIF_MAX_HWADDR_LEN/2;i++) {
-		mac_high <<= 8;
-		mac_high |= mac[i];
-	}
-	for (i=NETIF_MAX_HWADDR_LEN/2;i<NETIF_MAX_HWADDR_LEN;i++) {
-		mac_low <<= 8;
-		mac_low |= mac[i];
-	}
 
-	os_printf("DBG: SDK version:%s\n", system_get_sdk_version());
-	os_printf("DBG: ESP8266 chip ID:0x%x\n", system_get_chip_id());
-	os_printf("DBG: AIR version: " AIR_VERSION " \n");
-	os_printf("DBG: MAC address: 0x%0x%0x\n", mac_high, mac_low);
-
-	printTaskInfo();
+	os_printf("INFO: SDK version:%s\n", system_get_sdk_version());
+	os_printf("INFO: ESP8266 chip ID:0x%x\n", system_get_chip_id());
+	os_printf("INFO: AIR version: " AIR_VERSION " \n");
+	os_printf("INFO: MAC address: %0x:%0x:%0x:%0x:%0x:%0x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
 	// Initialize spiffs
 	user_spiffs();
@@ -320,7 +280,7 @@ void IRAM_ATTR user_init(void) {
 
 	// Start STATIONAP mode for scanning and for connection
 //	xTaskCreate(softap_task,"softap_task",500,NULL,6,NULL);
-	xTaskCreate(station_task,"station_task",500,NULL,6,NULL);
+	xTaskCreate(station_task, "station_task", 500, NULL, 6, NULL);
 
 	// Init to be able to start TCP server later
 	espconn_init();

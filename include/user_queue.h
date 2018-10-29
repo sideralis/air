@@ -16,4 +16,6 @@ extern xQueueHandle got_ip_queue;
 
 extern xSemaphoreHandle connect_sem;
 
+extern int global_tcpclient;
+
 #endif /* INCLUDE_USER_QUEUE_H_ */
