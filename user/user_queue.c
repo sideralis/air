@@ -21,7 +21,7 @@ xQueueHandle got_ip_queue; 				/* Queue used to indicate that ESP8266 station is
 
 xSemaphoreHandle connect_sem; 			/* Semaphore used to avoid reading and writing at same time file connect_status.json */
 
-int global_tcpclient;					// FIXME to be replaced
+int start_tcpclient;					// FIXME to be replaced
 /**
  * Create queues
  */

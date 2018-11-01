@@ -23,6 +23,8 @@ user/user_spiffs.c: Spiffs init
 user/user_sds011.c:	Driver for SDS011 (PM2.5 & PM10 sensor)
 					Use GPIO4 (RX) and GPIO5 (TX) to connect to SDS011 uart port
 					
+user/user_tcp_client.c:	TCP client, used to send device registration to our server
+
 user/user_tcp_server.c:	TCP server + table to map functions and web page
 
 user/user_test.c:	Unit tests
@@ -66,6 +68,8 @@ Or launch it from Eclipse (do not forget to put a breakpoint before launching it
 ==================
 == ARCHITECTURE ==
 ==================
+See UML file air in plan folder
+
 ## HTML ##
 The pages are stored in a spiffs image.
 The spiffs image is flashed to the board at address 0x300000 with command esptool.py --port /dev/ttyUSB0 -b 460800 write_flash 0x300000 spiffs-image.bin
@@ -79,29 +83,15 @@ When scan is done, scan_done() is called.
 Data are then read and for each network a message is queued.
 
 ## Main ##
-= Power on
-= Configure as station + AP
-= Do we have connection information?
-				YES												NO (1)														NONE
-Connect to internet	+ led blue blinking				Scan wifi nearby + led BLUE blinking								Scan wifi nearby + led BLUE blinking
-Can connect?										 						
-	YES					NO							Start TCP server + led BLUE blinking								Start TCP server + led BLUE blinking
-Start TCP server	Goto to (1)						Wait for user to connect to AP										Wait for user to connect to AP
-Display data + led									(3) Display all wifi user can connect to or none if none			Wifi available ?
-													User select a network or none										NO						YES
-																														Goto (2)				Goto (3)
+See UML file air in plan folder																														Goto (2)				Goto (3)
 
 ===============
 == WEB PAGES ==
 ===============
-/index.html or /: main page 
-
-/wifi.html: Page used to connect to a wifi station
-	
+/wifi.html: Page used to display all wifi network and let user select the one he wants to connect to
+/connect.html: To retrieve the ssid name and password of the wifi ssid the user wants to connect to
 													
 ===========
 == TO DO ==
 ===========
-
-2- Display measurements
-3- Send measurements to server
+See github issues

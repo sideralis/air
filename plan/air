@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XMI xmi.version="1.2" xmlns:UML="http://schema.omg.org/spec/UML/1.4" timestamp="2018-11-01T16:36:58" verified="false">
+ <XMI.header>
+  <XMI.documentation>
+   <XMI.exporter>umbrello uml modeller http://umbrello.kde.org</XMI.exporter>
+   <XMI.exporterVersion>1.6.13</XMI.exporterVersion>
+   <XMI.exporterEncoding>UnicodeUTF8</XMI.exporterEncoding>
+  </XMI.documentation>
+  <XMI.metamodel xmi.version="1.4" href="UML.xml" xmi.name="UML"/>
+ </XMI.header>
+ <XMI.content>
+  <UML:Model isRoot="false" xmi.id="m1" name="Modèle UML" isAbstract="false" isSpecification="false" isLeaf="false">
+   <UML:Namespace.ownedElement>
+    <UML:Stereotype isRoot="false" xmi.id="folder" visibility="public" name="folder" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false"/>
+    <UML:Model isRoot="false" xmi.id="Logical_View" visibility="public" name="Logical View" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false">
+     <UML:Namespace.ownedElement>
+      <UML:Package isRoot="false" stereotype="folder" xmi.id="Datatypes" visibility="public" name="Datatypes" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false">
+       <UML:Namespace.ownedElement>
+        <UML:DataType isRoot="false" xmi.id="uqctHPydvVZit" visibility="public" name="char" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="upAaLeeqEhAid" visibility="public" name="int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uXHIHY9YT0GhR" visibility="public" name="float" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uHRGhw7vDFhrx" visibility="public" name="double" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uFxsu03SYEzYy" visibility="public" name="bool" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="u3Gwr31IqO43H" visibility="public" name="string" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uCh2yKAnkNlQQ" visibility="public" name="unsigned char" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uiYrdwyvtsaVa" visibility="public" name="signed char" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="utjic6Pf3HM6T" visibility="public" name="unsigned int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="ucmbGb48zRWGY" visibility="public" name="signed int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uPtm3rDiwqBLO" visibility="public" name="short int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uM93QBVNqdKUz" visibility="public" name="unsigned short int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="ucUPdpRz4JTXy" visibility="public" name="signed short int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uJ44plGOIcTtu" visibility="public" name="long int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uIcrNw87Y0Avc" visibility="public" name="signed long int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="ucgIkuTZ7RGty" visibility="public" name="unsigned long int" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="uXJiykzlrCfHr" visibility="public" name="long double" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+        <UML:DataType isRoot="false" xmi.id="u3xDVGBxNS8eq" visibility="public" name="wchar_t" isAbstract="false" namespace="Datatypes" isSpecification="false" isLeaf="false"/>
+       </UML:Namespace.ownedElement>
+      </UML:Package>
+      <UML:Class isRoot="false" xmi.id="unuFPIOqiU2J9" visibility="public" name="wifi scan" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false">
+       <UML:Classifier.feature>
+        <UML:Operation isRoot="false" xmi.id="uJckps6k7JuxN" visibility="public" isOverride="false" name="Start wifi scan" isAbstract="false" isQuery="false" isSpecification="false" isLeaf="false"/>
+       </UML:Classifier.feature>
+      </UML:Class>
+      <UML:Class isRoot="false" xmi.id="uJlGJ8PV5EQpc" visibility="public" name="main" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false">
+       <UML:Classifier.feature>
+        <UML:Operation isRoot="false" xmi.id="uJHaL8r4aP6Hd" visibility="public" isOverride="false" name="Report network" isAbstract="false" isQuery="false" isSpecification="false" isLeaf="false"/>
+       </UML:Classifier.feature>
+      </UML:Class>
+      <UML:Class isRoot="false" xmi.id="uthioHjWZWXbb" visibility="public" name="SoftAP" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false">
+       <UML:Classifier.feature>
+        <UML:Operation isRoot="false" xmi.id="uvNKUdNKBFVvG" visibility="public" isOverride="false" name="Switch to" isAbstract="false" isQuery="false" isSpecification="false" isLeaf="false"/>
+       </UML:Classifier.feature>
+      </UML:Class>
+      <UML:Class isRoot="false" xmi.id="uztzMJ44Swh4B" visibility="public" name="TCP server" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false">
+       <UML:Classifier.feature>
+        <UML:Operation isRoot="false" xmi.id="uohY3Np8wjYRX" visibility="public" isOverride="false" name="Start" isAbstract="false" isQuery="false" isSpecification="false" isLeaf="false"/>
+       </UML:Classifier.feature>
+      </UML:Class>
+      <UML:Class isRoot="false" xmi.id="uBzJo1dtycYmB" visibility="public" name="User" isAbstract="false" namespace="Logical_View" isSpecification="false" isLeaf="false"/>
+     </UML:Namespace.ownedElement>
+     <XMI.extension xmi.extender="umbrello">
+      <diagrams resolution="96">
+       <diagram showops="1" showopsig="1" zoom="86,95652173913044" canvasheight="1186.87" documentation="" showgrid="0" font="Ubuntu,11,-1,5,50,0,0,0,0,0" backgroundcolor="#ffffff" localid="-1" griddotcolor="#d3d3d3" showattsig="1" textcolor="#000000" type="6" isopen="1" linewidth="0" name="air" showpackage="1" usefillcolor="1" showatts="1" xmi.id="uD1cep2cNmmDy" snapx="8" showstereotype="1" snapcsgrid="1" snapy="8" showattribassocs="1" linecolor="#ff0000" snapgrid="0" canvaswidth="1883.67" fillcolor="#ffff00" showpubliconly="0" showscope="1">
+        <widgets>
+         <floatingtext role="700" autoresize="1" text="task_station" x="-99.8" y="-387.55" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uSZN809sYVhQ1" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uDj4wxlxj8WPM" showstereotype="1" pretext="" linecolor="#ff0000" width="96" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="2" x="-59.8" documentation="" y="-207" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uICeEYPVSQgZL" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uMwHdLpOmmIDe" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="Could not connect" x="535.009" y="406.804" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u6koj29sFdd1W" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uzlvj9Yp9QXu4" showstereotype="1" pretext="" linecolor="#ff0000" width="136" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="task_led" x="-116.15" y="-81.65" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uxVl9dlDCKGPf" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uhh1XoVFbt9gq" showstereotype="1" pretext="" linecolor="#ff0000" width="72" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="683.4" documentation="" y="614.45" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uMXmXbKk16IKc" activityname="TO DO" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uvbL8ojU3S9jV" showstereotype="1" linecolor="#ff0000" width="72" postcondition="" usesdiagramfillcolor="0" fillcolor="#cc0000" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="688" documentation="" y="424.15" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u5M9cJ33ZepWG" activityname="TO DO" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uNeHOD36jYWJX" showstereotype="1" linecolor="#ff0000" width="72" postcondition="" usesdiagramfillcolor="0" fillcolor="#cc0000" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="4" x="460" documentation="" y="618.45" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uP5d2D2pGsHSP" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="usRRsnbKoyExn" showstereotype="1" linecolor="#ff0000" width="24" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="381.99" documentation="" y="669.1" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uDzzsDZg82QEN" activityname="Send MQTT messages" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uLsc3UinlNb1z" showstereotype="1" linecolor="#ff0000" width="176" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="0" x="-59.8" documentation="" y="-349.6" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uVVVW0OoEZUww" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="us5H0Dm7uPttL" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="0" x="-58.65" documentation="" y="-32.2" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uSXgY0bJPHUum" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uLtlnMbmb7EXY" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="Device never connected to internet" x="348" y="-144" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="um4ppVXNZUGEU" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uda6nXY2gAurN" showstereotype="1" pretext="" linecolor="#ff0000" width="248" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="user_init" x="-560.224" y="-392.825" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uSRkuwumEWEUI" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="u8imBOP8Sx9L7" showstereotype="1" pretext="" linecolor="#ff0000" width="72" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="Connected" x="832" y="-72" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="udbOYZfJsxVb5" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uQkW4brXGUpLl" showstereotype="1" pretext="" linecolor="#ff0000" width="88" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="4" x="460" documentation="" y="32" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u22dnTS7NvkJR" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="ui3LPobCsRQKU" showstereotype="1" linecolor="#ff0000" width="24" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="-583.674" documentation="-task_station: set device in station mode (will connect to a router)&#xa;-task_led: to manage led&#xa;-task_main: main task&#xa;-task_sds011: to manage pm sensor" y="-86.8747" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uzvhVU4YA3407" activityname="Launch tasks" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uNGq2pb8dKIii" showstereotype="1" linecolor="#ff0000" width="112" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="0" activitytype="1" x="356" documentation="" y="296" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uzxltslTXiqk3" activityname="Switch device to station mode" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="upfrzSaqt59hA" showstereotype="1" linecolor="#ff0000" width="232" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="388" documentation="" y="-104" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uJIs3R5MzhLsO" activityname="Launch scanning task" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uSoMkizOplreG" showstereotype="1" linecolor="#ff0000" width="168" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <signalwidget autoresize="1" x="352" documentation="" y="224" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uCgeDIbdr19ga" signaltype="1" textcolor="#000000" signalname="Wait for user wifi choice" linewidth="0" usefillcolor="1" xmi.id="ubeV4dsoaJleo" showstereotype="1" linecolor="#ff0000" width="240" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="404" documentation="" y="152" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uBU09rhhPHBCS" activityname="Start TCP server" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uyUFp2iWqOuRx" showstereotype="1" linecolor="#ff0000" width="136" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="0" x="464" documentation="" y="-424.454" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="utJxGQSQfg88e" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uYB1Vqlqmd8uR" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="0" activitytype="1" x="-603.674" documentation="Set it to 115200 baud" y="-278.875" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uVF0wN4v5mAto" activityname="configure UART" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uKZuG5ATYU8cr" showstereotype="1" linecolor="#ff0000" width="152" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="416" documentation="" y="488" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u7mdU6HhJCf6a" activityname="Set let to off" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uxtwHf3N8kuqx" showstereotype="1" linecolor="#ff0000" width="112" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="0" activitytype="1" x="368" documentation="" y="88" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uqCnQIJdCzYE4" activityname="Switch device to soft mode" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="ugAPlv1qL9VEa" showstereotype="1" linecolor="#ff0000" width="208" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="2" x="-535.674" documentation="" y="-6.87475" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="udEU1qEFDQVb6" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u0RZiUb1zqUmD" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <signalwidget autoresize="0" x="728" documentation="" y="-184" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u5jgVPT1jPMZS" signaltype="1" textcolor="#000000" signalname="Wait for connection to router" linewidth="0" usefillcolor="1" xmi.id="uyUzrEVGx4isC" showstereotype="1" linecolor="#ff0000" width="296" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="No networks" x="550.145" y="15.6044" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uGmQQW7LxuJuG" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="u9zz0354ttuEI" showstereotype="1" pretext="" linecolor="#ff0000" width="96" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="wifi callback queue msg" x="840" y="-344" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uiah8ez1iNi1S" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uU5InysRKiBTn" showstereotype="1" pretext="" linecolor="#ff0000" width="176" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="364" documentation="" y="-320.454" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ulY72qoYkNfON" activityname="Register wifi status callback" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uEDDNhTK6ZbZg" showstereotype="1" linecolor="#ff0000" width="216" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="408" documentation="" y="-376.454" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="u81tGEkv4hf81" activityname="Set led to blink" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u1GfJiPpZVucC" showstereotype="1" linecolor="#ff0000" width="128" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="392" documentation="This implies disconnect tcp server and connect tcp client." y="552" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uurXEDuSWDJRI" activityname="Register user device" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uFWPq2SYb1V0B" showstereotype="1" linecolor="#ff0000" width="160" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="408" documentation="" y="368" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ugoZj1j4vfNjv" activityname="Connect to wifi" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u1JO1nydBYtgz" showstereotype="1" linecolor="#ff0000" width="128" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="816" documentation="" y="-32" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uLfdGwTHF2TK1" activityname="Set led to blue" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u9Gq6lbh9NOcH" showstereotype="1" linecolor="#ff0000" width="120" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="4" x="460" documentation="" y="428.15" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uFudCkHxQZ4TG" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u2ajgIpXPUuw5" showstereotype="1" linecolor="#ff0000" width="24" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <signalwidget autoresize="1" x="380" documentation="" y="-40" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uzKtSmDSVh7Ug" signaltype="1" textcolor="#000000" signalname="Wait for scan done" linewidth="0" usefillcolor="1" xmi.id="uzWXjEXKFvXqb" showstereotype="1" linecolor="#ff0000" width="184" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="-555.674" documentation="spiffs, queue, espconn" y="-190.875" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ugX6GC9rT4An0" activityname="Inits" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="ukCUP45FCQRpT" showstereotype="1" linecolor="#ff0000" width="56" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="task_main" x="432" y="-464.454" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uiyFkKQYSthg4" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uLxSwzFdhy2qi" showstereotype="1" pretext="" linecolor="#ff0000" width="80" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <signalwidget autoresize="0" x="880" documentation="" y="-312" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uE5QGVTtozzWD" signaltype="2" textcolor="#000000" signalname="wifi callback queue msg" linewidth="0" usefillcolor="1" textid="uU5InysRKiBTn" xmi.id="uggbdgIIBsyjb" showstereotype="1" linecolor="#ff0000" width="56" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0">
+          <floatingtext role="700" autoresize="1" text="wifi callback queue msg" x="840" y="-344" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uiah8ez1iNi1S" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uU5InysRKiBTn" showstereotype="1" pretext="" linecolor="#ff0000" width="176" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         </signalwidget>
+         <activitywidget autoresize="1" activitytype="1" x="688" documentation="" y="32" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="upLflb7k7iPko" activityname="TO DO" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="us9DqrDKj2D7h" showstereotype="1" linecolor="#ff0000" width="72" postcondition="" usesdiagramfillcolor="0" fillcolor="#cc0000" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="0" activitytype="4" x="460" documentation="" y="-176" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uBeaB9QmFJV1o" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u7W0D2oqLg3aT" showstereotype="1" linecolor="#ff0000" width="24" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="1160" documentation="" y="-120" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ucRIvI8smbKsB" activityname="TO DO" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="u6Y5eLSyp1ExE" showstereotype="1" linecolor="#ff0000" width="72" postcondition="" usesdiagramfillcolor="0" fillcolor="#cc0000" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="0" x="-535.674" documentation="" y="-350.875" height="16" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ubwXYvOihvRJL" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uDfgfX48aPeiB" showstereotype="1" linecolor="#ff0000" width="16" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="4" x="864" documentation="" y="-116" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uggfkPf4dN0yV" activityname="" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="ucsLU4NfpiXLu" showstereotype="1" linecolor="#ff0000" width="24" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="Not connected" x="968" y="-136" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ukDV6K2aNBw2p" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uaEqc1ektoo17" showstereotype="1" pretext="" linecolor="#ff0000" width="112" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <floatingtext role="700" autoresize="1" text="Connected" x="428" y="456.55" height="24" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="uz3S9IbnesLEC" textcolor="#000000" linewidth="0" posttext="" usefillcolor="1" xmi.id="uAcsyfP0fPwHF" showstereotype="1" pretext="" linecolor="#ff0000" width="88" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+         <activitywidget autoresize="1" activitytype="1" x="-151.8" documentation="When device is in station mode it will try to connect to the previous connected station." y="-290.95" height="32" font="Ubuntu,11,-1,5,50,0,0,0,0,0" isinstance="0" localid="ubHAc3hAsGdB9" activityname="Set device in station mode" precondition="" textcolor="#000000" linewidth="0" usefillcolor="1" xmi.id="uGgaS9KN6SHUA" showstereotype="1" linecolor="#ff0000" width="200" postcondition="" usesdiagramfillcolor="0" fillcolor="#ffff00" usesdiagramusefillcolor="0"/>
+        </widgets>
+        <messages/>
+        <associations>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uvbL8ojU3S9jV" linecolor="#ff0000" widgetaid="usRRsnbKoyExn" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="630.45" startx="484"/>
+           <endpoint endx="683.4" endy="630.45"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="ubeV4dsoaJleo" linecolor="#ff0000" widgetaid="uyUFp2iWqOuRx" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="184" startx="472"/>
+           <endpoint endx="472" endy="224"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u1JO1nydBYtgz" linecolor="#ff0000" widgetaid="upfrzSaqt59hA" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="328" startx="472"/>
+           <endpoint endx="472" endy="368"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uyUFp2iWqOuRx" linecolor="#ff0000" widgetaid="ugAPlv1qL9VEa" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="120" startx="472"/>
+           <endpoint endx="472" endy="152"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="ugAPlv1qL9VEa" linecolor="#ff0000" widgetaid="ui3LPobCsRQKU" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="56" startx="472"/>
+           <endpoint endx="472" endy="88"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="upfrzSaqt59hA" linecolor="#ff0000" widgetaid="ubeV4dsoaJleo" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="256" startx="472"/>
+           <endpoint endx="472" endy="296"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uNeHOD36jYWJX" linecolor="#ff0000" widgetaid="u2ajgIpXPUuw5" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="440.15" startx="484"/>
+           <endpoint endx="688" endy="440.15"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u2ajgIpXPUuw5" linecolor="#ff0000" widgetaid="u1JO1nydBYtgz" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="400" startx="472"/>
+           <endpoint endx="472" endy="428.15"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uxtwHf3N8kuqx" linecolor="#ff0000" widgetaid="u2ajgIpXPUuw5" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="452.15" startx="472"/>
+           <endpoint endx="472" endy="488"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uLsc3UinlNb1z" linecolor="#ff0000" widgetaid="usRRsnbKoyExn" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="642.45" startx="472"/>
+           <endpoint endx="472" endy="669.1"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="us9DqrDKj2D7h" linecolor="#ff0000" widgetaid="ui3LPobCsRQKU" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="48" startx="484"/>
+           <endpoint endx="688" endy="48"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="usRRsnbKoyExn" linecolor="#ff0000" widgetaid="uFWPq2SYb1V0B" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="584" startx="472"/>
+           <endpoint endx="472" endy="618.45"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u0RZiUb1zqUmD" linecolor="#ff0000" widgetaid="uNGq2pb8dKIii" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-54.8747" startx="-527.674"/>
+           <endpoint endx="-527.674" endy="-6.87475"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uEDDNhTK6ZbZg" linecolor="#ff0000" widgetaid="u1GfJiPpZVucC" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-344.454" startx="472"/>
+           <endpoint endx="472" endy="-320.454"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uSoMkizOplreG" linecolor="#ff0000" widgetaid="u7W0D2oqLg3aT" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-152" startx="472"/>
+           <endpoint endx="472" endy="-104"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u1GfJiPpZVucC" linecolor="#ff0000" widgetaid="uYB1Vqlqmd8uR" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-408.454" startx="472"/>
+           <endpoint endx="472" endy="-376.454"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uKZuG5ATYU8cr" linecolor="#ff0000" widgetaid="uDfgfX48aPeiB" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-334.875" startx="-527.674"/>
+           <endpoint endx="-527.674" endy="-278.875"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uMwHdLpOmmIDe" linecolor="#ff0000" widgetaid="uGgaS9KN6SHUA" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-258.95" startx="-51.8"/>
+           <endpoint endx="-51.8" endy="-207"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="ukCUP45FCQRpT" linecolor="#ff0000" widgetaid="uKZuG5ATYU8cr" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-246.875" startx="-527.674"/>
+           <endpoint endx="-527.674" endy="-190.875"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uyUzrEVGx4isC" linecolor="#ff0000" widgetaid="u7W0D2oqLg3aT" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Orthogonal">
+           <startpoint starty="-166" startx="484"/>
+           <endpoint endx="728" endy="-166"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="ui3LPobCsRQKU" linecolor="#ff0000" widgetaid="uzWXjEXKFvXqb" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-8" startx="472"/>
+           <endpoint endx="472" endy="32"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u6Y5eLSyp1ExE" linecolor="#ff0000" widgetaid="ucsLU4NfpiXLu" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-104" startx="888"/>
+           <endpoint endx="1160" endy="-104"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u7W0D2oqLg3aT" linecolor="#ff0000" widgetaid="uEDDNhTK6ZbZg" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-288.454" startx="472"/>
+           <endpoint endx="472" endy="-176"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uNGq2pb8dKIii" linecolor="#ff0000" widgetaid="ukCUP45FCQRpT" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-158.875" startx="-527.674"/>
+           <endpoint endx="-527.674" endy="-86.8747"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="u9Gq6lbh9NOcH" linecolor="#ff0000" widgetaid="ucsLU4NfpiXLu" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-92" startx="876"/>
+           <endpoint endx="876" endy="-32"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="ucsLU4NfpiXLu" linecolor="#ff0000" widgetaid="uyUzrEVGx4isC" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-152" startx="876"/>
+           <endpoint endx="876" endy="-116"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="516" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uyUzrEVGx4isC" linecolor="#ff0000" widgetaid="uggbdgIIBsyjb" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-280" startx="898.871"/>
+           <endpoint endx="884.612" endy="-184"/>
+           <point y="-216.583" x="898.871"/>
+           <point y="-249.166" x="884.612"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uzWXjEXKFvXqb" linecolor="#ff0000" widgetaid="uSoMkizOplreG" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-72" startx="472"/>
+           <endpoint endx="472" endy="-40"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uFWPq2SYb1V0B" linecolor="#ff0000" widgetaid="uxtwHf3N8kuqx" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="520" startx="472"/>
+           <endpoint endx="472" endy="552"/>
+          </linepath>
+         </assocwidget>
+         <assocwidget autoresize="1" roleBdoc="" documentation="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" seqnum="" indexa="1" indexb="1" textcolor="none" type="515" linewidth="0" changeabilityA="900" changeabilityB="900" usefillcolor="1" totalcounta="2" totalcountb="2" visibilityA="0" visibilityB="0" widgetbid="uGgaS9KN6SHUA" linecolor="#ff0000" widgetaid="us5H0Dm7uPttL" usesdiagramfillcolor="1" fillcolor="none" roleAdoc="" usesdiagramusefillcolor="1">
+          <linepath layout="Polyline">
+           <startpoint starty="-333.6" startx="-51.8"/>
+           <endpoint endx="-51.8" endy="-290.95"/>
+          </linepath>
+         </assocwidget>
+        </associations>
+       </diagram>
+      </diagrams>
+     </XMI.extension>
+    </UML:Model>
+    <UML:Model isRoot="false" xmi.id="Use_Case_View" visibility="public" name="Use Case View" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false">
+     <UML:Namespace.ownedElement/>
+    </UML:Model>
+    <UML:Model isRoot="false" xmi.id="Component_View" visibility="public" name="Component View" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false">
+     <UML:Namespace.ownedElement/>
+    </UML:Model>
+    <UML:Model isRoot="false" xmi.id="Deployment_View" visibility="public" name="Deployment View" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false">
+     <UML:Namespace.ownedElement/>
+    </UML:Model>
+    <UML:Model isRoot="false" xmi.id="Entity_Relationship_Model" visibility="public" name="Entity Relationship Model" isAbstract="false" namespace="m1" isSpecification="false" isLeaf="false">
+     <UML:Namespace.ownedElement/>
+    </UML:Model>
+   </UML:Namespace.ownedElement>
+  </UML:Model>
+ </XMI.content>
+ <XMI.extensions xmi.extender="umbrello">
+  <docsettings documentation="" uniqueid="uhh1XoVFbt9gq" viewid="uD1cep2cNmmDy"/>
+  <listview>
+   <listitem id="Views" open="1" type="800">
+    <listitem id="Entity_Relationship_Model" open="1" type="836"/>
+    <listitem id="Use_Case_View" open="1" type="802"/>
+    <listitem id="Component_View" open="1" type="821"/>
+    <listitem id="Deployment_View" open="1" type="827"/>
+    <listitem id="Logical_View" open="1" type="801">
+     <listitem id="uD1cep2cNmmDy" open="0" label="air" type="809"/>
+     <listitem id="uJlGJ8PV5EQpc" open="1" type="813">
+      <listitem id="uJHaL8r4aP6Hd" open="0" type="815"/>
+     </listitem>
+     <listitem id="uthioHjWZWXbb" open="1" type="813">
+      <listitem id="uvNKUdNKBFVvG" open="0" type="815"/>
+     </listitem>
+     <listitem id="uztzMJ44Swh4B" open="1" type="813">
+      <listitem id="uohY3Np8wjYRX" open="0" type="815"/>
+     </listitem>
+     <listitem id="Datatypes" open="0" type="830">
+      <listitem id="uFxsu03SYEzYy" open="1" type="829"/>
+      <listitem id="uqctHPydvVZit" open="1" type="829"/>
+      <listitem id="uHRGhw7vDFhrx" open="1" type="829"/>
+      <listitem id="uXHIHY9YT0GhR" open="1" type="829"/>
+      <listitem id="upAaLeeqEhAid" open="1" type="829"/>
+      <listitem id="uXJiykzlrCfHr" open="1" type="829"/>
+      <listitem id="uJ44plGOIcTtu" open="1" type="829"/>
+      <listitem id="uPtm3rDiwqBLO" open="1" type="829"/>
+      <listitem id="uiYrdwyvtsaVa" open="1" type="829"/>
+      <listitem id="ucmbGb48zRWGY" open="1" type="829"/>
+      <listitem id="uIcrNw87Y0Avc" open="1" type="829"/>
+      <listitem id="ucUPdpRz4JTXy" open="1" type="829"/>
+      <listitem id="u3Gwr31IqO43H" open="1" type="829"/>
+      <listitem id="uCh2yKAnkNlQQ" open="1" type="829"/>
+      <listitem id="utjic6Pf3HM6T" open="1" type="829"/>
+      <listitem id="ucgIkuTZ7RGty" open="1" type="829"/>
+      <listitem id="uM93QBVNqdKUz" open="1" type="829"/>
+      <listitem id="u3xDVGBxNS8eq" open="1" type="829"/>
+     </listitem>
+     <listitem id="uBzJo1dtycYmB" open="1" type="813"/>
+     <listitem id="unuFPIOqiU2J9" open="1" type="813">
+      <listitem id="uJckps6k7JuxN" open="0" type="815"/>
+     </listitem>
+    </listitem>
+   </listitem>
+  </listview>
+  <codegeneration>
+   <codegenerator language="C++"/>
+  </codegeneration>
+ </XMI.extensions>
+</XMI>

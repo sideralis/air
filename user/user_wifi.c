@@ -6,6 +6,8 @@
  */
 
 #include "esp_common.h"
+
+#include "lwip/netif.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "json/cJSON.h"
@@ -24,6 +26,15 @@ uint16 channel_bits;
 
 struct ip_addr my_ip;
 
+extern u8_t mac[NETIF_MAX_HWADDR_LEN];
+
+#define AIR_SSID_NAME "AIR-%0X"
+
+/**
+ *
+ * @param router_list
+ * @param router_list_cleaned
+ */
 static void wifi_list_remove_duplicates(struct router_info_head *router_list, struct router_info_head *router_list_cleaned)
 {
 	int found_duplicate;
@@ -51,7 +62,7 @@ static void wifi_list_remove_duplicates(struct router_info_head *router_list, st
 			// this is a new network, let's add it
 			info2 = (struct router_info *) zalloc(sizeof(struct router_info));
 			info2->authmode = info1->authmode;						// WIFI mode
-			info2->channel = info1->channel;							// WIFI channel
+			info2->channel = info1->channel;						// WIFI channel
 			info2->rssi = info1->rssi;								// WIFI rssi
 			memcpy(info2->bssid, info1->bssid, 6);					// WIFI mac add
 			if (strlen(info1->ssid) <= 32)
@@ -63,7 +74,11 @@ static void wifi_list_remove_duplicates(struct router_info_head *router_list, st
 		}
 	}
 }
-
+/**
+ *
+ * @param router_list
+ * @param router_list_ordered
+ */
 static void wifi_list_order(struct router_info_head *router_list, struct router_info_head *router_list_ordered)
 {
 	int inserted;
@@ -82,7 +97,7 @@ static void wifi_list_order(struct router_info_head *router_list, struct router_
 		}
 		info3 = (struct router_info *) zalloc(sizeof(struct router_info));
 		info3->authmode = info1->authmode;						// WIFI mode
-		info3->channel = info1->channel;							// WIFI channel
+		info3->channel = info1->channel;						// WIFI channel
 		info3->rssi = info1->rssi;								// WIFI rssi
 		memcpy(info3->bssid, info1->bssid, 6);					// WIFI mac add
 		if (strlen(info1->ssid) <= 32)
@@ -97,7 +112,10 @@ static void wifi_list_order(struct router_info_head *router_list, struct router_
 		}
 	}
 }
-
+/**
+ *
+ * @param router_list
+ */
 static void wifi_list_clear(struct router_info_head *router_list)
 {
 	struct router_info *info = NULL;
@@ -110,6 +128,7 @@ static void wifi_list_clear(struct router_info_head *router_list)
 // -------------------------------------------------------------------------------------------------
 /**
  *
+ * @param evt
  */
 void wifi_handle_event_cb(System_Event_t *evt)
 {
@@ -160,13 +179,15 @@ void wifi_handle_event_cb(System_Event_t *evt)
 
 		break;
 	default:
-//        	os_printf("event %x\n", evt->event_id);
+//      os_printf("event %x\n", evt->event_id);
 		break;
 	}
 }
 
 /**
  * Function which is called when wifi scan is completed
+ * @param arg
+ * @param status
  */
 void wifi_scan_done(void *arg, STATUS status)
 {
@@ -214,15 +235,15 @@ void wifi_scan_done(void *arg, STATUS status)
 //			os_printf("DBG1: %s %i\n", info->ssid, info->channel);
 //		}
 
-//		wifi_list_remove_duplicates(&router_list, &router_list_cleaned);
+		wifi_list_remove_duplicates(&router_list, &router_list_cleaned);
 
 		//		os_printf("\n");
 //		SLIST_FOREACH(info, &router_list_cleaned, next) {
 //			os_printf("DBG2: %s %i\n", info->ssid, info->channel);
 //		}
 
-//		wifi_list_clear(&router_list);
-//		wifi_list_order(&router_list_cleaned, &router_list);
+		wifi_list_clear(&router_list);
+		wifi_list_order(&router_list_cleaned, &router_list);
 
 //		os_printf("\n");
 //		SLIST_FOREACH(info, &router_list, next) {
@@ -230,7 +251,7 @@ void wifi_scan_done(void *arg, STATUS status)
 //					info->bssid[0], info->bssid[1], info->bssid[2], info->bssid[3], info->bssid[4], info->bssid[5]);
 //		}
 
-//		wifi_list_clear(&router_list_cleaned);
+		wifi_list_clear(&router_list_cleaned);
 
 		// Queue result
 		if (!(SLIST_EMPTY(&router_list))) {
@@ -272,11 +293,11 @@ void wifi_scan_done(void *arg, STATUS status)
 	if (ret != pdPASS) {
 		os_printf("WARNING: Problem when queuing status scan!\n");
 	}
-
 }
 
 /**
  * Task to scan nearby wifi
+ * @param param
  */
 void task_wifi_scan(void *param)
 {
@@ -289,24 +310,32 @@ void task_wifi_scan(void *param)
 	}
 
 	while (1) {
-//		os_printf("DBG: Scanning\n");
 		wifi_station_scan(NULL, wifi_scan_done);
 		ret = xQueueReceive(status_scan_queue, &scan_status, portMAX_DELAY);			// Wait indefinitely
 		if (scan_status == WIFI_DETECTED)
 			break;																		// TODO: We should exit only if we are sure we have found all networks
 	}
-
-//	os_printf("DBG: deleting wifi scan task\n");
-
 	vTaskDelete(NULL);
 }
-void conn_ap_init(void)
+/**
+ * Switch for station mode. Device will connect to a router.
+ */
+static void conn_ap_init(void)
 {
 	wifi_set_opmode(STATION_MODE);
 }
-
-void soft_ap_init(void)
+/**
+ * Switch to access point. Device will broadcast his own wifi network, and other devices can connect to.
+ */
+static void soft_ap_init(void)
 {
+	char air_ssid_name[7];
+	unsigned char mac_hash = 0;
+	int i;
+
+	for (i = 0; i < sizeof(mac); mac_hash ^= mac[i++])
+		;
+
 	wifi_set_opmode_current(SOFTAP_MODE/*STATIONAP_MODE*/);
 
 	struct softap_config *config = (struct softap_config *) zalloc(sizeof(struct softap_config)); // initialization
@@ -315,30 +344,40 @@ void soft_ap_init(void)
 
 	memset(config->ssid, 0, 32);
 	memset(config->password, 0, 64);
-	memcpy(config->ssid, "AIR-XX", 6);			// TODO: XX should be replaced by hash of mac address
+	snprintf(config->ssid, sizeof(air_ssid_name), AIR_SSID_NAME, mac_hash);
 	config->authmode = AUTH_OPEN;
 	config->ssid_len = 6; // or its actual SSID length
 	config->max_connection = 4;
 
-//    os_printf("DBG: channel used in softap (1/2): %d\n", config->channel);
 	wifi_softap_set_config(config); // Set ESP8266 soft-AP config
+
+	os_printf("INFO: broadcasting ssid %s\n", config->ssid);
 
 	free(config);
 }
-
-void station_task(void *param)
+/**
+ * Task for switching to sation mode
+ * @param param
+ */
+void task_station(void *param)
 {
 	conn_ap_init();
 	vTaskDelete(NULL);
 }
-
-void softap_task(void *param)
+/**
+ * Task for switching to AP mode
+ * @param param
+ */
+void task_softap(void *param)
 {
 	soft_ap_init();
 	vTaskDelete(NULL);
 }
-
-void stationap_task(void *param)
+/**
+ * NOT USED
+ * @param param
+ */
+void task_stationap(void *param)
 {
 
 }

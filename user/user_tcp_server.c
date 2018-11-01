@@ -119,7 +119,7 @@ static void ICACHE_FLASH_ATTR tcp_server_discon_cb(void *arg)
 	//tcp disconnect successfully
 
 	os_printf("INFO: tcp disconnect succeed\n");
-	if (global_tcpclient == true) {
+	if (start_tcpclient == true) {
 		os_printf("INFO: reconnect as tcp client\n");
 		user_tcpclient_init();
 	}
