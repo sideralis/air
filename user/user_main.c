@@ -312,6 +312,8 @@ void IRAM_ATTR user_init(void)
 	// Start task led
 //	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
 
+	user_mqtt_init();
+
 	// Main task - state machine
 	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
 

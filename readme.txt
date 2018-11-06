@@ -14,6 +14,8 @@ user/user_main.c: 	Entry point. Set esp8266 in Station and softAP mode.
 					Start a task to capture data from SDS011
 					Start a task to scan wifi networks
 					
+user/user_mqtt.c:	To send mqtt messages to our server
+					
 user/user_pages.c:	Each function handles a web page for a given protocol (GET, POST or both)
 
 user/user_queue.c:	To create queues which are used for inter tasks communication

@@ -76,6 +76,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lspiffs \
 	-lssl \
 	-lwpa \
+	-lmqtt \
 	$(DEP_LIBS_eagle.app.v6) \
 	-Wl,--end-group
 #	-lwps \
@@ -98,7 +99,7 @@ DEPENDS_eagle.app.v6 = \
 #	-DTXRX_TXBUF_DEBUG
 #	-DTXRX_RXBUF_DEBUG
 #	-DWLAN_CONFIG_CCX
-CONFIGURATION_DEFINES =	-DICACHE_FLASH -D$(FLAVOR)
+CONFIGURATION_DEFINES =	-DICACHE_FLASH -D$(FLAVOR) -DMQTT_TASK
 
 ifeq ($(UNIT_TEST),YES)
     CONFIGURATION_DEFINES += -DTEST
