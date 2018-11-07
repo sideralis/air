@@ -59,7 +59,6 @@ LINKFLAGS_eagle.app.v6 = \
 	-lcirom \
 	-lcrypto \
 	-lespconn \
-	-lespnow \
 	-lfreertos \
 	-lgcc \
 	-lhal \
@@ -77,9 +76,12 @@ LINKFLAGS_eagle.app.v6 = \
 	-lssl \
 	-lwpa \
 	-lmqtt \
+	-lopenssl \
+	-lmbedtls \
 	$(DEP_LIBS_eagle.app.v6) \
 	-Wl,--end-group
 #	-lwps \
+#	-lespnow \
 
 DEPENDS_eagle.app.v6 = \
                 $(LD_FILE) \

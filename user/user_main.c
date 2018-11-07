@@ -131,6 +131,8 @@ void task_main(void *param)
 	struct station_config *config;			// Information on these ap
 	struct led_info led_setup;
 	struct station_config station_info;
+	int connection_failed = 0;
+	bool end = false;
 
 	// Let's blink while we are not fully connected
 	led_setup.color_to = LED_WHITE;
@@ -150,8 +152,8 @@ void task_main(void *param)
 		// Get ap info
 		// wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);					// Get number of registered access points
-		if (nb_ap == 0) {
-			// We have never connected to any network, let's scan for wifi
+		if ((nb_ap == 0) || (connection_failed > 2)) {				// If we don't have registered wifi station or could not connect more than 2 times
+			// Let's scan for wifi
 			// Start task wifi scan
 			xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
 			// Wait for end of scan
@@ -214,21 +216,29 @@ void task_main(void *param)
 				start_tcpclient = true;								// FIXME replace by something stronger
 				tcpserver_disconnect_and_tcpclient_connect();		// TODO process return message
 
+				end = true;
+
 			}
 		} else {
 			os_printf("DBG: We have already connected to a network. Trying again...\n");
 
 			// Wait for connection and ip
 			ret = xQueueReceive(got_ip_queue, &got_ip, portMAX_DELAY);
-			os_printf("DBG: We should be connected now\n");
-
-			// Stop blinking to indicate we are connected
-			led_setup.color_to = LED_BLUE;
-			led_setup.state = LED_ON;
-			xQueueSend(led_queue, &led_setup, 0);
-
+			if (got_ip == 0) {
+				os_printf("INFO: We should be connected now\n");
+				end = true;
+				// Stop blinking to indicate we are connected
+				led_setup.color_to = LED_BLUE;
+				led_setup.state = LED_ON;
+				xQueueSend(led_queue, &led_setup, 0);
+			} else {
+				os_printf("INFO: Connection did not succeed\n");
+				connection_failed += 1;
+				// We will loop one more time and if it still fails we will scan for networks
+			}
 		}
-		vTaskSuspend(xTaskGetCurrentTaskHandle());
+		if (end)
+			vTaskSuspend(xTaskGetCurrentTaskHandle());
 	}
 }
 /**

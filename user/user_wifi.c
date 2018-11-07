@@ -146,7 +146,8 @@ void wifi_handle_event_cb(System_Event_t *evt)
 		break;
 	case EVENT_STAMODE_DISCONNECTED:
 		os_printf("INFO: disconnect from ssid %s, reason %d\n", evt->event_info.disconnected.ssid, evt->event_info.disconnected.reason);
-		// TODO: we should handle this case!
+		got_ip = evt->event_info.disconnected.reason;
+		xQueueSend(got_ip_queue, &got_ip, 0);
 		break;
 	case EVENT_STAMODE_AUTHMODE_CHANGE:
 		os_printf("INFO: mode: %d -> %d\n", evt->event_info.auth_change.old_mode, evt->event_info.auth_change.new_mode);
@@ -156,7 +157,7 @@ void wifi_handle_event_cb(System_Event_t *evt)
 				IP2STR(&evt->event_info.got_ip.gw));
 		os_printf("\n");
 		memcpy(&my_ip, &evt->event_info.got_ip.ip, sizeof(my_ip));
-		got_ip = 1;
+		got_ip = 0;
 		xQueueSend(got_ip_queue, &got_ip, 0);
 		break;
 	case EVENT_SOFTAPMODE_STACONNECTED:

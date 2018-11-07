@@ -28,18 +28,17 @@
 
 #include "mqtt/MQTTClient.h"
 
-#define MQTT_BROKER  "penwv1.messaging.internetofthings.ibmcloud.com"  /* MQTT Broker Address*/
-#define MQTT_PORT    1883             /* MQTT Port*/
+#include "user_mqtt.h"
+#include "ssl_server_crt.h"
 
-#define MQTT_CLIENT_THREAD_NAME         "mqtt_client_thread"
-#define MQTT_CLIENT_THREAD_STACK_WORDS  2048
-#define MQTT_CLIENT_THREAD_PRIO         8
+ssl_ca_crt_key_t ssl_cck;
 
-#define ORG 			"penwv1"
-#define DEVICE_TYPE 	"air"
-#define DEVICE_ID 		"84f3ebb1c429"
-#define TOKEN 			"wIHle93LI)ma?GB?b!"
-#define CLIENT_ID		"d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID
+#define SSL_CA_CERT_KEY_INIT(s,a,b,c,d,e,f)  ((ssl_ca_crt_key_t *)s)->cacrt = a;\
+                                             ((ssl_ca_crt_key_t *)s)->cacrt_len = b;\
+                                             ((ssl_ca_crt_key_t *)s)->cert = c;\
+                                             ((ssl_ca_crt_key_t *)s)->cert_len = d;\
+                                             ((ssl_ca_crt_key_t *)s)->key = e;\
+                                             ((ssl_ca_crt_key_t *)s)->key_len = f;
 
 LOCAL xTaskHandle mqttc_client_handle;
 
@@ -49,8 +48,7 @@ static void messageArrived(MessageData* data)
 }
 static void mqtt_client_thread(void* pvParameters)
 {
-	vTaskDelay(5000 / portTICK_RATE_MS);  //send every 1 seconds
-	os_printf("mqtt client thread starts\n");
+	vTaskDelay(5000 / portTICK_RATE_MS);  			// wait every 5 seconds before we start
 
 	MQTTClient client;
 	Network network;
@@ -60,15 +58,15 @@ static void mqtt_client_thread(void* pvParameters)
 	MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
 	pvParameters = 0;
-	NetworkInit(&network);
-	os_printf("DBG: mqtt network init done\n");
+	NetworkInitSSL(&network);
 
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
-	os_printf("DBG: mqtt client init done\n");
 
 	char* address = MQTT_BROKER;
 
-	if ((rc = NetworkConnect(&network, address, MQTT_PORT)) != 0) {
+	SSL_CA_CERT_KEY_INIT(&ssl_cck, ca_crt, ca_crt_len, NULL, 0, NULL, 0);
+
+	if ((rc = NetworkConnectSSL(&network, address, MQTT_PORT, &ssl_cck, TLSv1_2_client_method(), SSL_VERIFY_PEER, 8192)) != 0) {
 		printf("Return code from network connect is %d\n", rc);
 	}
 	os_printf("DBG: mqtt network connect done\n");
