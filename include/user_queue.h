@@ -13,6 +13,7 @@ extern xQueueHandle led_queue;
 extern xQueueHandle network_queue;
 extern xQueueHandle status_scan_queue;
 extern xQueueHandle got_ip_queue;
+extern xQueueHandle mqtt_msg_queue;
 
 extern xSemaphoreHandle connect_sem;
 

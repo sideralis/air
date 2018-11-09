@@ -63,7 +63,8 @@ void user_set_softap_config();
 void user_mdns_config();
 
 /* Global */
-SLIST_HEAD(router_info_head, router_info) router_data;
+SLIST_HEAD(router_info_head, router_info)
+router_data;
 u8_t mac[NETIF_MAX_HWADDR_LEN];
 
 /* Functions */
@@ -126,7 +127,7 @@ void task_main(void *param)
 {
 	signed portBASE_TYPE ret;
 	bool ret2;
-	int got_ip;
+	int i, got_ip;
 	int nb_ap;								// Nb of router
 	struct station_config *config;			// Information on these ap
 	struct led_info led_setup;
@@ -148,10 +149,19 @@ void task_main(void *param)
 		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 		return;
 	}
+	wifi_station_ap_number_set(2);
+
 	while (1) {
 		// Get ap info
 		// wifi_station_get_current_ap_id();
 		nb_ap = wifi_station_get_ap_info(config);					// Get number of registered access points
+		// === DBG
+		for (i = 0; i < nb_ap; i++) {
+			os_printf("DBG: %d %s\n", i + 1, config[i].ssid);
+		}
+		if (nb_ap == 0)
+			os_printf("DBG: No AP data in flash\n");
+		// === DBG
 		if ((nb_ap == 0) || (connection_failed > 2)) {				// If we don't have registered wifi station or could not connect more than 2 times
 			// Let's scan for wifi
 			// Start task wifi scan
@@ -175,7 +185,7 @@ void task_main(void *param)
 
 				// User is now supposed to connect to our network and select an access point
 				// Wait for user network selection
-				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);					// station_info contains the name and password of wifi network
+				ret = xQueueReceive(network_queue, &station_info, portMAX_DELAY);				// station_info contains the name and password of wifi network
 
 				// Switch back to station mode
 				xTaskCreate(task_station, "station_task", 500, NULL, 6, NULL);
@@ -237,8 +247,13 @@ void task_main(void *param)
 				// We will loop one more time and if it still fails we will scan for networks
 			}
 		}
-		if (end)
+		if (end) {
+			// Start task sds011
+			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+			// Stop this task
 			vTaskSuspend(xTaskGetCurrentTaskHandle());
+
+		}
 	}
 }
 /**
@@ -320,15 +335,12 @@ void IRAM_ATTR user_init(void)
 	espconn_init();
 
 	// Start task led
-//	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
+	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
 
 	user_mqtt_init();
 
 	// Main task - state machine
 	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
-
-	// Start task sds011
-//	xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 }
 

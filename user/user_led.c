@@ -36,45 +36,46 @@ int led_time_blink;
 int led_speed_fade;
 
 // When led common is VDD
-static void led_set_duty_inv(uint32 duty, uint8 channel) {
-	duty = 1023-duty;
+static void led_set_duty_inv(uint32 duty, uint8 channel)
+{
+	duty = 1023 - duty;
 	pwm_set_duty(duty, channel);
 }
 
 // When led common is GND
-static void led_set_duty_nor(uint32 duty, uint8 channel) {
+static void led_set_duty_nor(uint32 duty, uint8 channel)
+{
 	pwm_set_duty(duty, channel);
 }
 
-
 void task_led(void *param)
 {
-	int r,g,b;
-	int r1,g1,b1;
+	int r, g, b;
+	int r1, g1, b1;
 	int queue_size;
 	struct led_info led_setup;
 	void (*led_set_duty)(uint32, uint8);
 
 	uint32 io_info[][3] = {
-            { PWM_0_OUT_IO_MUX, PWM_0_OUT_IO_FUNC, PWM_0_OUT_IO_NUM }, //Channel 0		RED
-            { PWM_2_OUT_IO_MUX, PWM_2_OUT_IO_FUNC, PWM_2_OUT_IO_NUM }, //Channel 1		BLUE
-            { PWM_3_OUT_IO_MUX, PWM_3_OUT_IO_FUNC, PWM_3_OUT_IO_NUM }, //Channel 2		GREEN
-    };
-	u32 duty[3] = {0, 0, 0}; //Max duty cycle is 1023
-	pwm_init(1000, duty ,PWM_NUM_CHANNEL_NUM,io_info);
+			{ PWM_0_OUT_IO_MUX, PWM_0_OUT_IO_FUNC, PWM_0_OUT_IO_NUM }, //Channel 0		RED
+			{ PWM_2_OUT_IO_MUX, PWM_2_OUT_IO_FUNC, PWM_2_OUT_IO_NUM }, //Channel 1		BLUE
+			{ PWM_3_OUT_IO_MUX, PWM_3_OUT_IO_FUNC, PWM_3_OUT_IO_NUM }, //Channel 2		GREEN
+			};
+	u32 duty[3] = { 0, 0, 0 }; //Max duty cycle is 1023
+	pwm_init(1000, duty, PWM_NUM_CHANNEL_NUM, io_info);
 
 	led_state = LED_OFF;
 	led_color_to = LED_ORANGE;
 	led_color_from = LED_BLUE;
-	led_intensity = LED_INTENSITY_DIM;
+	led_intensity = LED_INTENSITY_VERY_DIM;
 	led_time_blink = 500;
 
-	if (*(int *)param == LED_TYPE_RGB)
+	if (*(int *) param == LED_TYPE_RGB)
 		led_set_duty = led_set_duty_inv;
 	else
 		led_set_duty = led_set_duty_nor;
 
-	while(1) {
+	while (1) {
 		switch (led_state) {
 		case LED_OFF:
 			led_set_duty(0, 0); // RED
@@ -87,7 +88,7 @@ void task_led(void *param)
 
 			// Wait for a new command
 			xQueueReceive(led_queue, &led_setup, portMAX_DELAY);
-			os_printf("DBG: Receive led command - %d %d %d\n",led_setup.state,led_setup.color_to, led_setup.color_from );
+			os_printf("DBG: Receive led command - %d %d %d\n", led_setup.state, led_setup.color_to, led_setup.color_from);
 			led_state = led_setup.state;
 			led_color_to = led_setup.color_to;
 			led_color_from = led_setup.color_from;

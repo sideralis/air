@@ -11,15 +11,16 @@
 
 #include "user_led.h"
 #include "user_wifi.h"
+#include "user_mqtt.h"
 
 /* Global queues */
-xQueueHandle wifi_scan_queue; 			/* Queue used to store wifi scan results */
-xQueueHandle led_queue; 				/* Queue used to setup led */
-xQueueHandle network_queue; 			/* Queue used to tell which wifi network to use */
-xQueueHandle status_scan_queue; 		/* Queue used to stop or restart wifi scan */
-xQueueHandle got_ip_queue; 				/* Queue used to indicate that ESP8266 station is now connected to an AP and got an IP */
-
-xSemaphoreHandle connect_sem; 			/* Semaphore used to avoid reading and writing at same time file connect_status.json */
+xQueueHandle wifi_scan_queue; 			// Queue used to store wifi scan results
+xQueueHandle led_queue; 				// Queue used to setup led
+xQueueHandle network_queue; 			// Queue used to tell which wifi network to use
+xQueueHandle status_scan_queue; 		// Queue used to stop or restart wifi scan
+xQueueHandle got_ip_queue; 				// Queue used to indicate that ESP8266 station is now connected to an AP and got an IP
+xQueueHandle mqtt_msg_queue; 			// Queue used to indicate that we have a message to transmit through MQTT
+xSemaphoreHandle connect_sem; 			// Semaphore used to avoid reading and writing at same time file connect_status.json
 
 int start_tcpclient;					// FIXME to be replaced
 /**
@@ -34,6 +35,6 @@ void user_create_queues(void)
 	network_queue = xQueueCreate(1, sizeof(struct station_config));
 	status_scan_queue = xQueueCreate(1, sizeof(int));
 	got_ip_queue = xQueueCreate(1, sizeof(int));
-
+	mqtt_msg_queue = xQueueCreate(1, sizeof(struct mqtt_msg));
 	connect_sem = xSemaphoreCreateMutex();
 }

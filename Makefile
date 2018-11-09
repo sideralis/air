@@ -73,15 +73,15 @@ LINKFLAGS_eagle.app.v6 = \
 	-lpwm \
 	-lsmartconfig \
 	-lspiffs \
-	-lssl \
+	-lopenssl \
 	-lwpa \
 	-lmqtt \
-	-lopenssl \
 	-lmbedtls \
 	$(DEP_LIBS_eagle.app.v6) \
 	-Wl,--end-group
 #	-lwps \
 #	-lespnow \
+#	-lssl \
 
 DEPENDS_eagle.app.v6 = \
                 $(LD_FILE) \

@@ -21,7 +21,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#include <stddef.h>
+#include "esp_common.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -29,7 +29,12 @@
 #include "mqtt/MQTTClient.h"
 
 #include "user_mqtt.h"
+#include "user_queue.h"
 #include "ssl_server_crt.h"
+
+#include "lwip/netdb.h"
+#include "openssl/ssl.h"
+#include "MQTTFreeRTOS.h"
 
 ssl_ca_crt_key_t ssl_cck;
 
@@ -46,9 +51,17 @@ static void messageArrived(MessageData* data)
 {
 	printf("Message arrived: %s\n", data->message->payload);
 }
+
 static void mqtt_client_thread(void* pvParameters)
 {
-	vTaskDelay(5000 / portTICK_RATE_MS);  			// wait every 5 seconds before we start
+
+	while (wifi_station_get_connect_status() != STATION_GOT_IP) {
+		vTaskDelay(5000 / portTICK_RATE_MS);  			// wait every 5 seconds before we start
+	}
+	os_printf("INFO: MQTT task start as we are connected\n");
+
+	int heap_size = system_get_free_heap_size();
+	os_printf("DBG: Heap size = %d\n", heap_size);
 
 	MQTTClient client;
 	Network network;
@@ -66,17 +79,18 @@ static void mqtt_client_thread(void* pvParameters)
 
 	SSL_CA_CERT_KEY_INIT(&ssl_cck, ca_crt, ca_crt_len, NULL, 0, NULL, 0);
 
-	if ((rc = NetworkConnectSSL(&network, address, MQTT_PORT, &ssl_cck, TLSv1_2_client_method(), SSL_VERIFY_PEER, 8192)) != 0) {
-		printf("Return code from network connect is %d\n", rc);
+	if ((rc = NetworkConnectSSL(&network, address, MQTT_PORT, &ssl_cck, TLSv1_2_client_method(), SSL_VERIFY_PEER, 4096)) != 0) {
+		os_printf("ERR: Return code from NetworkConnectSSL is %d\n", rc);
+	} else {
+		os_printf("DBG: mqtt network connect done\n");
 	}
-	os_printf("DBG: mqtt network connect done\n");
 
 #if defined(MQTT_TASK)
 
 	if ((rc = MQTTStartTask(&client)) != pdPASS) {
-		printf("Return code from start tasks is %d\n", rc);
+		printf("ERR: Return code from start tasks is %d\n", rc);
 	} else {
-		printf("Use MQTTStartTask\n");
+		printf("DBG: Use MQTTStartTask\n");
 	}
 
 #endif
@@ -87,28 +101,32 @@ static void mqtt_client_thread(void* pvParameters)
 	connectData.password.cstring = TOKEN;
 
 	if ((rc = MQTTConnect(&client, &connectData)) != 0) {
-		os_printf("Return code from MQTT connect is %d\n", rc);
+		os_printf("ERR: Return code from MQTTConnect is %d\n", rc);
 	} else {
 		os_printf("DBG: mqtt connect done\n");
 	}
 
-	while (--count) {
+	while (1) {
 		MQTTMessage message;
 		char payload[30];
+		struct mqtt_msg mqtt_pm;
+
+		// Wait for a new message
+		xQueueReceive(mqtt_msg_queue, &mqtt_pm, portMAX_DELAY);
 
 		message.qos = QOS2;
 		message.retained = 0;
 		message.payload = payload;
-		sprintf(payload, "{\"hello Bernard\": %d}", count);
+		sprintf(payload, "{\"pm2.5\": %d, \"pm10\": %d}", mqtt_pm.pm25, mqtt_pm.pm10);
 		message.payloadlen = strlen(payload);
 
-		if ((rc = MQTTPublish(&client, "iot-2/evt/status/fmt/json", &message)) != 0) {
+		if ((rc = MQTTPublish(&client, "iot-2/evt/pm/fmt/json", &message)) != 0) {
 			os_printf("Return code from MQTT publish is %d\n", rc);
 		} else {
-			os_printf("MQTT publish topic \"iot-2/evt/status/fmt/json\", message is %s\n", payload);
+			os_printf("MQTT publish topic \"iot-2/evt/pm/fmt/json\", message is %s\n", payload);
 		}
 
-		vTaskDelay(1000 / portTICK_RATE_MS);  //send every 1 seconds
+//		vTaskDelay(1000 / portTICK_RATE_MS);  //send every 1 seconds
 	}
 
 	printf("mqtt_client_thread going to be deleted\n");

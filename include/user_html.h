@@ -12,7 +12,8 @@
 #define METHOD_POST 	0b10
 #define METHOD_ALL		0b11
 
-#define AIR_SERVER_IP 	{95, 123, 99, 121}			// This is the ip address of our server.
+//#define AIR_SERVER_IP 	{95, 123, 99, 121}		gr// This is the ip address of our server.
+#define AIR_SERVER_IP 	{79, 154, 192, 232}			// This is the ip address of our server.
 
 #define MAX_LENGHT_USER_ID	64						// Max length for storing email address of user
 

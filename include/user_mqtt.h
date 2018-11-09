@@ -21,5 +21,9 @@
 #define TOKEN 			"wIHle93LI)ma?GB?b!"
 #define CLIENT_ID		"d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID
 
+struct mqtt_msg {
+	uint32 pm25;
+	uint32 pm10;
+};
 
 #endif /* INCLUDE_USER_MQTT_H_ */

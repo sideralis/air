@@ -10,6 +10,9 @@
 
 #include "freertos/semphr.h"
 
+#include "user_mqtt.h"
+#include "user_queue.h"
+
 /* Defines */
 #define ETS_GPIO_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_GPIO_INUM)  //ENABLE INTERRUPTS
 #define ETS_GPIO_INTR_DISABLE() _xt_isr_mask(1 << ETS_GPIO_INUM)    //DISABLE INTERRUPTS
@@ -115,6 +118,7 @@ void task_data_read(void *param)
 	uint8 sds011[10];
 	uint8 state_machine;
 	uint32 pm25, pm10;
+	struct mqtt_msg mqtt_pm;
 
 	for (;;) {
 		// Wait for interrupt (should be start bit)
@@ -156,10 +160,10 @@ void task_data_read(void *param)
 			vTaskDelay(500 / portTICK_RATE_MS);		// Wait 0.5s
 		} else {
 
-			for (i = 0; i < 10; i++) {
-				os_printf("DBG: 0x%x ", sds011[i]/*(frc2_count[i]-frc2_count[i-1])*16/80*/);
-			}
-			os_printf("\n");
+//			for (i = 0; i < 10; i++) {
+//				os_printf("DBG: 0x%x ", sds011[i]/*(frc2_count[i]-frc2_count[i-1])*16/80*/);
+//			}
+//			os_printf("\n");
 			i = check_and_decode(sds011, &pm25, &pm10);
 			if (i == -1) {
 				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 1);
@@ -171,6 +175,9 @@ void task_data_read(void *param)
 				GPIO_OUTPUT_SET(GPIO_ID_PIN(14), 0);
 			} else {
 				os_printf("INFO: PM2.5 = %d -- PM10 = %d\n", pm25, pm10);
+				mqtt_pm.pm10 = pm10;
+				mqtt_pm.pm25 = pm25;
+				xQueueSend(mqtt_msg_queue, &mqtt_pm, 0);
 			}
 		}
 
@@ -183,7 +190,7 @@ void task_data_read(void *param)
 }
 // ===================
 // Connection
-// 5v = Vin
+// 5v = VV (on Lolin v3 else VIN)
 // GND = GND
 // RX = D2
 // TX = D1
