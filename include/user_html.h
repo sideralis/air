@@ -15,7 +15,8 @@
 #define AIR_SERVER_IP 	{95, 123, 97, 19}					// This is the ip address of our server (cerdanyola) for debug purpose. ALWAYS EXTERNAL IP!!!
 #define AIR_SERVER_NAME "air-website.eu-gb.mybluemix.net"
 
-#define MAX_LENGHT_USER_ID	64						// Max length for storing email address of user
+// FIXME It does not make sense that this value below is greater than the field value in struct page_param. Both should be linked!
+#define MAX_LENGHT_USER_ID	48						// Max length for storing email address of user
 
 // The parameters given with a page (found in the page name for a GET and in content for a POST)
 struct page_param {

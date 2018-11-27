@@ -17,8 +17,8 @@ char user_id[MAX_LENGHT_USER_ID];
 
 int page_wifi(struct header_html_recv *request, struct espconn *pesp_conn)
 {
-	strncpy(user_id, request->form[0].value, MAX_LENGHT_USER_ID - 1);
-	user_id[MAX_LENGHT_USER_ID] = 0;
+	strncpy(user_id, request->form[0].value, MAX_LENGHT_USER_ID - 1);	// FIXME user id should not be too long
+	user_id[MAX_LENGHT_USER_ID] = 0;									// FIXME user id should not be too long
 	return html_render_template(request->page_name, pesp_conn);
 }
 /**

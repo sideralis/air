@@ -64,8 +64,7 @@ void user_set_softap_config();
 void user_mdns_config();
 
 /* Global */
-SLIST_HEAD(router_info_head, router_info)
-router_data;
+SLIST_HEAD(router_info_head, router_info) router_data;
 
 struct device this_device;
 
@@ -151,7 +150,7 @@ void task_main(void *param)
 		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 		return;
 	}
-	wifi_station_ap_number_set(2);
+	wifi_station_ap_number_set(1);
 
 	while (1) {
 		// Get ap info
@@ -252,10 +251,10 @@ void task_main(void *param)
 		}
 		if (end) {
 			// Start MQTT task
-//			user_mqtt_init();
+			user_mqtt_init();
 
 			// Start task sds011
-//			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 			// Stop this task
 			vTaskSuspend(xTaskGetCurrentTaskHandle());
@@ -317,7 +316,6 @@ static void user_test(void)
  */
 void IRAM_ATTR user_init(void)
 {
-
 	int led_type = LED_TYPE_RGB;
 	bool ret;
 	int i;
@@ -357,7 +355,6 @@ void IRAM_ATTR user_init(void)
 	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
 
 	// Main task - state machine
-	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
-
+	xTaskCreate(task_main, "main", 512, NULL, 2, NULL);
 }
 

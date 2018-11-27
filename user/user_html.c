@@ -235,7 +235,7 @@ int process_header_ack(char *pusrdata, struct header_html_recv *request)
 		free(data);
 		return -1;
 	}
-										//                          0123456789
+											//                          0123456789
 	pStatus = pHTTP + 9;					// To point on status code (HTTP/1.1 xxx )
 	memcpy(data, pStatus, 4);
 	data[3] = 0;

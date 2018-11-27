@@ -10,7 +10,7 @@
 
 struct device {
 	char mac[13];
-	char token[64];
+	char token[32];
 	unsigned char ssid;
 };
 

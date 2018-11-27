@@ -31,7 +31,6 @@ static os_timer_t test_timer;
 static bool tcp_client_reconnect;
 
 extern char user_id[MAX_LENGHT_USER_ID];
-extern u8_t mac[NETIF_MAX_HWADDR_LEN];
 extern struct ip_addr my_ip;
 
 void user_tcpclient_init(void);

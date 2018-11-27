@@ -39,8 +39,6 @@
 #include "openssl/ssl.h"
 #include "MQTTFreeRTOS.h"
 
-extern u8_t mac[NETIF_MAX_HWADDR_LEN];
-
 ssl_ca_crt_key_t ssl_cck;
 
 #define SSL_CA_CERT_KEY_INIT(s,a,b,c,d,e,f)  ((ssl_ca_crt_key_t *)s)->cacrt = a;\
@@ -50,24 +48,28 @@ ssl_ca_crt_key_t ssl_cck;
                                              ((ssl_ca_crt_key_t *)s)->key = e;\
                                              ((ssl_ca_crt_key_t *)s)->key_len = f;
 
-LOCAL xTaskHandle mqttc_client_handle;
+#define TOPIC_PM 		"iot-2/evt/%s/pm/fmt/json"
+#define TOPIC_STATE		"iot-2/evt/%s/state/fmt/json"
+
+static xTaskHandle mqttc_client_handle;
 
 static void messageArrived(MessageData* data)
 {
 	printf("Message arrived: %s\n", data->message->payload);
 }
 
-static void mqtt_client_thread(void* pvParameters)
+static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
 {
 	MQTTClient client;
 	Network network;
-	unsigned char sendbuf[80], readbuf[80] = { 0 };
 	int rc = 0;
 	char* address = MQTT_BROKER;
 
 	MQTTMessage message;
-	char payload[30];
-	char topic[30];
+
+	char payload[48];						// FIXME check we don't write too much
+	char topic[64];
+	unsigned char sendbuf[80], readbuf[80] = { 0 };
 
 	int heap_size;
 
@@ -108,7 +110,11 @@ static void mqtt_client_thread(void* pvParameters)
 
 #endif
 	// Generate topic for state
-	sprintf(topic, "iot-2/evt/%s/state/fmt/json",this_device.mac);
+	if (strlen(TOPIC_STATE)-2+strlen(this_device.mac) > sizeof(topic)-1) {
+		os_printf("ERR: topic table (state) is too small!\n");
+		return;
+	}
+	sprintf(topic, TOPIC_STATE,this_device.mac);
 
 	connectData.MQTTVersion = 4;
 	connectData.clientID.cstring = this_device.mac;
@@ -140,7 +146,11 @@ static void mqtt_client_thread(void* pvParameters)
 		os_printf("INFO: MQTT publish topic \"%s\", message is %s\n", topic, payload);
 	}
 
-	sprintf(topic, "iot-2/evt/%s/pm/fmt/json",this_device.mac);
+	if (strlen(TOPIC_PM)-2+strlen(this_device.mac) > sizeof(topic)-1) {
+		os_printf("ERR: topic table (pm) is too small!\n");
+		return;
+	}
+	sprintf(topic, TOPIC_PM, this_device.mac);
 	while (1) {
 		struct mqtt_msg mqtt_pm;
 

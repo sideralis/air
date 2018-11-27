@@ -24,7 +24,7 @@
 
 /* Global variables */
 xSemaphoreHandle semaphore_uart_start = NULL;
-uint32 frc2_before, frc2_after;
+static uint32 frc2_before, frc2_after;
 
 /* Functions */
 

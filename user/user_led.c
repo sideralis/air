@@ -27,6 +27,7 @@
 
 #define PWM_NUM_CHANNEL_NUM    3  //number of PWM channels/leds
 
+// FIXME organise as a struct to save memory space
 int led_state;
 int led_color_to;
 int led_color_from;

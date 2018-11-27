@@ -27,8 +27,6 @@ uint16 channel_bits;
 
 struct ip_addr my_ip;
 
-extern u8_t mac[NETIF_MAX_HWADDR_LEN];
-
 #define AIR_SSID_NAME "AIR-%02X"
 
 /**
