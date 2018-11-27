@@ -203,6 +203,91 @@ int process_header_recv(char *pusrdata, struct header_html_recv *request)
 	free(page_and_params);
 	return 0;
 }
+#define CONTENT_TYPE_VALUE2 	"text/html; charset=utf-8"
+int process_header_ack(char *pusrdata, struct header_html_recv *request)
+{
+	char *pStatus, *pHTTP, *pParam, *pContentType, *pContentLength, *pEnd;
+	int size;
+	int query_nb = 0;
+	int i;
+
+	char *data;
+
+	data = malloc(MAX_SIZE_FOR_PAGE_AND_PARAMS);
+	if (data == 0) {
+		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
+		return -1;
+	}
+
+	// Let's clear request
+	request->method = 0;
+	request->page_name[0] = 0;
+	request->status = 0;
+	request->content[0] = 0;
+	for (i = 0; i < sizeof(request->form) / sizeof(request->form[0]); i++) {
+		request->form[i].key[0] = 0;
+		request->form[i].value[0] = 0;
+	}
+
+	// Now get status codes
+	pHTTP = strstr(pusrdata, "HTTP");
+	if (pHTTP == 0) {
+		free(data);
+		return -1;
+	}
+										//                          0123456789
+	pStatus = pHTTP + 9;					// To point on status code (HTTP/1.1 xxx )
+	memcpy(data, pStatus, 4);
+	data[3] = 0;
+	request->status = atoi(data);
+
+	// Now get content data
+	// Search for Content-type field
+	pContentType = strstr(pusrdata, CONTENT_TYPE);
+	if (pContentType != 0) {
+		if (strncmp(pContentType + sizeof(CONTENT_TYPE) - 1, CONTENT_TYPE_VALUE2, sizeof(CONTENT_TYPE_VALUE2) - 1) != 0) {
+			free(data);
+			return -1;			// Error type is 415
+		}
+	}
+	// Search for content length
+	pContentLength = strstr(pusrdata, CONTENT_LENGTH);
+	if (pContentLength == 0) {
+		free(data);
+		return -1;
+	}
+	pContentLength += sizeof(CONTENT_LENGTH) - 1;
+	pEnd = strstr(pContentLength, "\r\n");
+	if (pEnd == 0) {
+		free(data);
+		return -1;
+	}
+	strncpy(data, pContentLength, pEnd - pContentLength);
+	data[pEnd - pContentLength] = 0;
+	size = atoi(data);
+
+	// Extract content from body if any
+	if (size == 0) {
+		if (pContentType != 0) {
+			free(data);
+			return -1;
+		}
+	} else {
+		// Search for content, e.g. for an empty line
+		pParam = strstr(pContentLength, "\r\n\r\n");
+		if (pParam == 0) {
+			free(data);
+			return -1;
+		}
+		pParam += 4;		// to skip the empty line
+
+		strncpy(request->content, pParam, sizeof(request->content));
+		request->content[sizeof(request->content)-1] = 0;
+	}
+	free(data);
+	return 0;
+
+}
 
 char *html_add_header(char *page)
 {

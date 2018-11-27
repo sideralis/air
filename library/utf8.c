@@ -68,7 +68,12 @@ void convert_UTF8_string(char *from)
 			from += 3;
 			*to++ = a;
 		} else {
-			*to++ = *from++;
+			if (*from == '+') {		// Space can be encoded as '+' or as '%20'. Last case is handled above
+				*to++ = ' ';
+				from++;
+			} else {
+				*to++ = *from++;
+			}
 		}
 	}
 	*to = 0;

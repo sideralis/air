@@ -30,11 +30,16 @@
 
 #include "user_mqtt.h"
 #include "user_queue.h"
+#include "user_device.h"
+
 #include "ssl_server_crt.h"
 
 #include "lwip/netdb.h"
+#include "lwip/netif.h"
 #include "openssl/ssl.h"
 #include "MQTTFreeRTOS.h"
+
+extern u8_t mac[NETIF_MAX_HWADDR_LEN];
 
 ssl_ca_crt_key_t ssl_cck;
 
@@ -54,19 +59,29 @@ static void messageArrived(MessageData* data)
 
 static void mqtt_client_thread(void* pvParameters)
 {
+	MQTTClient client;
+	Network network;
+	unsigned char sendbuf[80], readbuf[80] = { 0 };
+	int rc = 0;
+	char* address = MQTT_BROKER;
 
+	MQTTMessage message;
+	char payload[30];
+	char topic[30];
+
+	int heap_size;
+
+	// Do not start as long as we are not connected to internet
 	while (wifi_station_get_connect_status() != STATION_GOT_IP) {
 		vTaskDelay(5000 / portTICK_RATE_MS);  			// wait every 5 seconds before we start
 	}
 	os_printf("INFO: MQTT task start as we are connected\n");
 
-	int heap_size = system_get_free_heap_size();
+	heap_size = system_get_free_heap_size();
 	os_printf("DBG: Heap size = %d\n", heap_size);
-
-	MQTTClient client;
-	Network network;
-	unsigned char sendbuf[80], readbuf[80] = { 0 };
-	int rc = 0, count = 10;
+	if (heap_size < 35000) {
+		os_printf("WARNING: heap size is low!");
+	}
 
 	MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
@@ -74,8 +89,6 @@ static void mqtt_client_thread(void* pvParameters)
 	NetworkInitSSL(&network);
 
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
-
-	char* address = MQTT_BROKER;
 
 	SSL_CA_CERT_KEY_INIT(&ssl_cck, ca_crt, ca_crt_len, NULL, 0, NULL, 0);
 
@@ -94,11 +107,19 @@ static void mqtt_client_thread(void* pvParameters)
 	}
 
 #endif
+	// Generate topic for state
+	sprintf(topic, "iot-2/evt/%s/state/fmt/json",this_device.mac);
 
 	connectData.MQTTVersion = 4;
-	connectData.clientID.cstring = CLIENT_ID;
+	connectData.clientID.cstring = this_device.mac;
 	connectData.username.cstring = "use-token-auth";
-	connectData.password.cstring = TOKEN;
+	connectData.password.cstring = this_device.token;
+	// LastWill
+	connectData.willFlag = 1;
+	connectData.will.qos = QOS2;
+	connectData.will.retained = 1;
+	connectData.will.message.cstring = "{\"state\": \"offline\"}";
+	connectData.will.topicName.cstring = topic;
 
 	if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 		os_printf("ERR: Return code from MQTTConnect is %d\n", rc);
@@ -106,9 +127,21 @@ static void mqtt_client_thread(void* pvParameters)
 		os_printf("DBG: mqtt connect done\n");
 	}
 
+	// Send status message (online with lastwill as offline)
+	message.qos = QOS2;
+	message.retained = 1;
+	message.payload = payload;
+	sprintf(payload, "{\"state\": \"online\"}");
+	message.payloadlen = strlen(payload);
+
+	if ((rc = MQTTPublish(&client, topic, &message)) != 0) {
+		os_printf("Return code from MQTT publish is %d\n", rc);
+	} else {
+		os_printf("INFO: MQTT publish topic \"%s\", message is %s\n", topic, payload);
+	}
+
+	sprintf(topic, "iot-2/evt/%s/pm/fmt/json",this_device.mac);
 	while (1) {
-		MQTTMessage message;
-		char payload[30];
 		struct mqtt_msg mqtt_pm;
 
 		// Wait for a new message
@@ -120,7 +153,7 @@ static void mqtt_client_thread(void* pvParameters)
 		sprintf(payload, "{\"pm2.5\": %d, \"pm10\": %d}", mqtt_pm.pm25, mqtt_pm.pm10);
 		message.payloadlen = strlen(payload);
 
-		if ((rc = MQTTPublish(&client, "iot-2/evt/pm/fmt/json", &message)) != 0) {
+		if ((rc = MQTTPublish(&client, topic, &message)) != 0) {
 			os_printf("Return code from MQTT publish is %d\n", rc);
 		} else {
 			os_printf("MQTT publish topic \"iot-2/evt/pm/fmt/json\", message is %s\n", payload);

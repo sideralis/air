@@ -17,8 +17,8 @@
 
 #define ORG 			"penwv1"
 #define DEVICE_TYPE 	"air"
-#define DEVICE_ID 		"84f3ebb1c429"
-#define TOKEN 			"wIHle93LI)ma?GB?b!"
+//#define DEVICE_ID 		"84f3ebb1c429"
+//#define TOKEN 			"wIHle93LI)ma?GB?b!"
 #define CLIENT_ID		"d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID
 
 struct mqtt_msg {

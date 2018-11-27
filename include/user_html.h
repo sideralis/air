@@ -12,8 +12,8 @@
 #define METHOD_POST 	0b10
 #define METHOD_ALL		0b11
 
-//#define AIR_SERVER_IP 	{95, 123, 99, 121}		gr// This is the ip address of our server.
-#define AIR_SERVER_IP 	{79, 154, 192, 232}			// This is the ip address of our server.
+#define AIR_SERVER_IP 	{95, 123, 97, 19}					// This is the ip address of our server (cerdanyola) for debug purpose. ALWAYS EXTERNAL IP!!!
+#define AIR_SERVER_NAME "air-website.eu-gb.mybluemix.net"
 
 #define MAX_LENGHT_USER_ID	64						// Max length for storing email address of user
 
@@ -26,6 +26,8 @@ struct page_param {
 // A description of the page received
 struct header_html_recv {
 	char page_name[64];				// name of the page
+	char content[64];				// Content of answer
+	int status;						// Status of acknowledgement
 	short method;					// method (GET/POST)
 	struct page_param form[10];		// The parameters associated with the page
 };

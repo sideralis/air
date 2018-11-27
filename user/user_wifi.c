@@ -18,6 +18,7 @@
 #include "user_queue.h"
 #include "user_wifi.h"
 #include "user_led.h"
+#include "user_device.h"
 
 SLIST_HEAD(router_info_head, router_info)
 router_list, router_list_cleaned;	// Cleaned means duplicates removed and ordered by decreasing rssi
@@ -28,7 +29,7 @@ struct ip_addr my_ip;
 
 extern u8_t mac[NETIF_MAX_HWADDR_LEN];
 
-#define AIR_SSID_NAME "AIR-%0X"
+#define AIR_SSID_NAME "AIR-%02X"
 
 /**
  *
@@ -331,11 +332,6 @@ static void conn_ap_init(void)
 static void soft_ap_init(void)
 {
 	char air_ssid_name[7];
-	unsigned char mac_hash = 0;
-	int i;
-
-	for (i = 0; i < sizeof(mac); mac_hash ^= mac[i++])
-		;
 
 	wifi_set_opmode_current(SOFTAP_MODE/*STATIONAP_MODE*/);
 
@@ -345,7 +341,7 @@ static void soft_ap_init(void)
 
 	memset(config->ssid, 0, 32);
 	memset(config->password, 0, 64);
-	snprintf(config->ssid, sizeof(air_ssid_name), AIR_SSID_NAME, mac_hash);
+	snprintf(config->ssid, sizeof(air_ssid_name), AIR_SSID_NAME, this_device.ssid);
 	config->authmode = AUTH_OPEN;
 	config->ssid_len = 6; // or its actual SSID length
 	config->max_connection = 4;

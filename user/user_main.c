@@ -45,9 +45,10 @@
 #include "user_led.h"
 #include "user_queue.h"
 #include "user_wifi.h"
+#include "user_device.h"
 
 /* Defines */
-#define AIR_VERSION			"0.0.4 (" __DATE__ " " __TIME__ ")"
+#define AIR_VERSION			"0.0.5 (" __DATE__ " " __TIME__ ")"
 #define SERVER_LOCAL_PORT   80
 
 /* Prototypes */
@@ -65,7 +66,8 @@ void user_mdns_config();
 /* Global */
 SLIST_HEAD(router_info_head, router_info)
 router_data;
-u8_t mac[NETIF_MAX_HWADDR_LEN];
+
+struct device this_device;
 
 /* Functions */
 
@@ -226,6 +228,7 @@ void task_main(void *param)
 				start_tcpclient = true;								// FIXME replace by something stronger
 				tcpserver_disconnect_and_tcpclient_connect();		// TODO process return message
 
+				// We should wait until registering acknowledgment
 				end = true;
 
 			}
@@ -248,8 +251,12 @@ void task_main(void *param)
 			}
 		}
 		if (end) {
+			// Start MQTT task
+//			user_mqtt_init();
+
 			// Start task sds011
-			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+//			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+
 			// Stop this task
 			vTaskSuspend(xTaskGetCurrentTaskHandle());
 
@@ -263,16 +270,25 @@ void task_main(void *param)
 static void user_display_device_data(void)
 {
 	bool ret;
+	u8_t mac[NETIF_MAX_HWADDR_LEN];
+	unsigned char mac_hash = 0;
+	int i;
 
 	// Display product information
 	ret = wifi_get_macaddr(STATION_IF, mac);
 	if (ret == false)
 		os_printf("ERR: Can not get MAC address!\n");
 
+	sprintf(this_device.mac, "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	for (i = 0; i < sizeof(mac); mac_hash ^= mac[i++])
+		;
+	this_device.ssid = mac_hash;
+
 	os_printf("INFO: SDK version:%s\n", system_get_sdk_version());
 	os_printf("INFO: ESP8266 chip ID:0x%x\n", system_get_chip_id());
 	os_printf("INFO: AIR version: " AIR_VERSION " \n");
-	os_printf("INFO: MAC address: %0x:%0x:%0x:%0x:%0x:%0x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	os_printf("INFO: MAC address: %s\n", this_device.mac);
+	os_printf("INFO: SSID: AIR-%02X\n", this_device.ssid);
 
 }
 #ifdef TEST
@@ -306,6 +322,9 @@ void IRAM_ATTR user_init(void)
 	bool ret;
 	int i;
 
+//	system_restore();
+//	return;
+
 	// Reconfigure UART to 115200 bauds
 	uart_init_new();
 
@@ -336,8 +355,6 @@ void IRAM_ATTR user_init(void)
 
 	// Start task led
 	xTaskCreate(task_led, "led driver", 256, &led_type, 2, NULL);
-
-	user_mqtt_init();
 
 	// Main task - state machine
 	xTaskCreate(task_main, "main", 1024, NULL, 2, NULL);
