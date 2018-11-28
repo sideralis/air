@@ -150,7 +150,7 @@ void task_main(void *param)
 		os_printf("ERR: malloc %d %s\n", __LINE__, __FILE__);
 		return;
 	}
-	wifi_station_ap_number_set(1);
+//	wifi_station_ap_number_set(1);
 
 	while (1) {
 		// Get ap info
@@ -163,7 +163,7 @@ void task_main(void *param)
 		if (nb_ap == 0)
 			os_printf("DBG: No AP data in flash\n");
 		// === DBG
-		if ((nb_ap == 0) || (connection_failed > 2)) {				// If we don't have registered wifi station or could not connect more than 2 times
+		if ((nb_ap == 0) || this_device.token[0] == 0 || (connection_failed > 2)) {	// If we don't have registered wifi station or could not connect more than 2 times
 			// Let's scan for wifi
 			// Start task wifi scan
 			xTaskCreate(task_wifi_scan, "Scan Wifi Around", 256, NULL, 2, NULL);
@@ -282,6 +282,9 @@ static void user_display_device_data(void)
 	for (i = 0; i < sizeof(mac); mac_hash ^= mac[i++])
 		;
 	this_device.ssid = mac_hash;
+	i = load("token", this_device.token, sizeof(this_device.token));
+	if (i == -1)
+		this_device.token[0] = 0;
 
 	os_printf("INFO: SDK version:%s\n", system_get_sdk_version());
 	os_printf("INFO: ESP8266 chip ID:0x%x\n", system_get_chip_id());
@@ -335,11 +338,11 @@ void IRAM_ATTR user_init(void)
 	return;
 #endif
 
-	// Display id, build number, mac address, ...
-	user_display_device_data();
-
 	// Initialize spiffs
 	user_spiffs();
+
+	// Display id, build number, mac address, ...
+	user_display_device_data();
 
 	// Create queues
 	user_create_queues();

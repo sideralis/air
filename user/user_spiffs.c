@@ -47,3 +47,42 @@ void user_spiffs()
 	// Mount SPIFFS image
 	spiffs_fs1_init();
 }
+
+int IRAM_ATTR save(char *filename, char *data, int size_data)
+{
+	int pfd, cnt;
+
+	pfd = open(filename, O_WRONLY | O_CREAT | O_TRUNC);
+	if (pfd < 3) {
+		os_printf("ERR: Can't open file %s\n", filename);
+		return -1;
+	}
+	cnt = write(pfd, data, size_data);
+	if (cnt < 0) {
+		os_printf("ERR: Can't write file %s\n", filename);
+		close(pfd);
+		return -1;
+	}
+	close(pfd);
+	return cnt;
+
+}
+
+int IRAM_ATTR load(char *filename, char *data, int maxdata)
+{
+	int pfd, cnt;
+
+	pfd = open(filename, O_RDONLY);
+	if (pfd < 3) {
+		os_printf("ERR: Can't open file %s\n", filename);
+		return -1;
+	}
+	cnt = read(pfd, data, maxdata);
+	if (cnt < 0) {
+		os_printf("ERR: Can't read file %s\n", filename);
+		close(pfd);
+		return -1;
+	}
+	close(pfd);
+	return cnt;
+}

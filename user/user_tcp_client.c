@@ -67,8 +67,7 @@ user_send_data(struct espconn *pespconn)
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
  *******************************************************************************/
-static void ICACHE_FLASH_ATTR
-user_tcp_recv_cb(void *arg, char *pusrdata, unsigned short length)
+static void user_tcp_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
 	struct header_html_recv *request;
 	struct espconn *pespconn = arg;
@@ -81,25 +80,30 @@ user_tcp_recv_cb(void *arg, char *pusrdata, unsigned short length)
 	//received some data from tcp connection
 	os_printf("INFO: tcp client data receive:\n%s\n", pusrdata);
 	process_header_ack(pusrdata, request);
-	os_printf("DBG: status ack = %d\n",request->status);
+	os_printf("DBG: status ack = %d\n", request->status);
 	os_printf("DBG: content ack = %s\n", request->content);
 
 	if (request->status == 200) {
 		// TODO do a function and simplify
 		char *pS, *pE;
-		pS = strchr(request->content,'=');
+		pS = strchr(request->content, '=');
 		if (pS == 0) {
 			free(request);
 			return;
 		}
 		pS = pS + 1;
-		pE = strstr(pS,"=]");
+		pE = strstr(pS, "=]");
 
 		if (request->content[1] == '0') {
-			strncpy(this_device.token, pS, pE-pS);
-			this_device.token[pE-pS] = 0;
+			if (pE - pS > sizeof(this_device.token) - 1) {
+				os_printf("ERR: token is too long\n");
+			} else {
+				strncpy(this_device.token, pS, pE - pS);
+				this_device.token[pE - pS + 1] = 0;
+				save("token", this_device.token, pE - pS + 1);
+			}
 		} else {
-	//		os_printf("ERR: %s\n", request->content);
+			//		os_printf("ERR: %s\n", request->content);
 		}
 		// FIXME if we receive a status of 200 but not with the right content, we should send the message again.
 		tcp_client_reconnect = false;
@@ -110,7 +114,6 @@ user_tcp_recv_cb(void *arg, char *pusrdata, unsigned short length)
 	}
 
 	free(request);
-
 
 }
 /******************************************************************************
@@ -188,7 +191,7 @@ user_tcp_recon_cb(void *arg, sint8 err)
  *                callback_arg -- a user-specified callback argument passed to
  *                dns_gethostbyname
  * Returns      : none
-*******************************************************************************/
+ *******************************************************************************/
 LOCAL void ICACHE_FLASH_ATTR user_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
 	struct espconn *pespconn = (struct espconn *)arg;
@@ -196,18 +199,17 @@ LOCAL void ICACHE_FLASH_ATTR user_dns_found(const char *name, ip_addr_t *ipaddr,
 	if (ipaddr == NULL) {
 		os_printf("user_dns_found NULL\n");
 
-	    struct hostent* ipAddress;
+		struct hostent* ipAddress;
 
-	    if ((ipAddress = gethostbyname(AIR_SERVER_NAME)) == 0) {
+		if ((ipAddress = gethostbyname(AIR_SERVER_NAME)) == 0) {
 			os_printf("user_dns_found still NULL\n");
-	        return;
-	    } else {
+			return;
+		} else {
 			os_printf("user_dns_found YES\n");
-	    }
+		}
 
 		return;
 	}
-
 
 	//dns got ip
 	os_printf("user_dns_found %d.%d.%d.%d \r\n",
@@ -218,13 +220,13 @@ LOCAL void ICACHE_FLASH_ATTR user_dns_found(const char *name, ip_addr_t *ipaddr,
 		// dns succeed, create tcp connection
 		os_timer_disarm(&test_timer);
 		tcp_server_ip.addr = ipaddr->addr;
-		memcpy(pespconn->proto.tcp->remote_ip, &ipaddr->addr, 4);	// remote ip of tcp server which get by dns
+		memcpy(pespconn->proto.tcp->remote_ip, &ipaddr->addr, 4);// remote ip of tcp server which get by dns
 
-		pespconn->proto.tcp->remote_port = 80;						// remote port of tcp server
-		pespconn->proto.tcp->local_port = espconn_port();			// local port of ESP8266
+		pespconn->proto.tcp->remote_port = 80;// remote port of tcp server
+		pespconn->proto.tcp->local_port = espconn_port();// local port of ESP8266
 
-		espconn_regist_connectcb(pespconn, user_tcp_connect_cb);	// register connect callback
-		espconn_regist_reconcb(pespconn, user_tcp_recon_cb);		// register reconnect callback as error handler
+		espconn_regist_connectcb(pespconn, user_tcp_connect_cb);// register connect callback
+		espconn_regist_reconcb(pespconn, user_tcp_recon_cb);// register reconnect callback as error handler
 		espconn_regist_disconcb(pespconn, user_tcp_discon_cb);
 
 		espconn_connect(pespconn);// tcp connect

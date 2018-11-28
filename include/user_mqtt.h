@@ -15,11 +15,7 @@
 #define MQTT_CLIENT_THREAD_STACK_WORDS  2048
 #define MQTT_CLIENT_THREAD_PRIO         8
 
-#define ORG 			"penwv1"
-#define DEVICE_TYPE 	"air"
-//#define DEVICE_ID 		"84f3ebb1c429"
-//#define TOKEN 			"wIHle93LI)ma?GB?b!"
-#define CLIENT_ID		"d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID
+#define CLIENT_ID		"d:penwv1:air:%s"
 
 struct mqtt_msg {
 	uint32 pm25;

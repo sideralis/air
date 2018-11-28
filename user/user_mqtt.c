@@ -48,8 +48,8 @@ ssl_ca_crt_key_t ssl_cck;
                                              ((ssl_ca_crt_key_t *)s)->key = e;\
                                              ((ssl_ca_crt_key_t *)s)->key_len = f;
 
-#define TOPIC_PM 		"iot-2/evt/%s/pm/fmt/json"
-#define TOPIC_STATE		"iot-2/evt/%s/state/fmt/json"
+#define TOPIC_PM 		"iot-2/evt/%s_pm/fmt/json"						// TODO define as const to save space ?
+#define TOPIC_STATE		"iot-2/evt/%s_etat/fmt/json"
 
 static xTaskHandle mqttc_client_handle;
 
@@ -58,17 +58,19 @@ static void messageArrived(MessageData* data)
 	printf("Message arrived: %s\n", data->message->payload);
 }
 
-static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
+static void mqtt_client_thread(void* pvParameters)
 {
 	MQTTClient client;
 	Network network;
 	int rc = 0;
 	char* address = MQTT_BROKER;
+	char clientID[32];						// FIXME check size if big enough
 
 	MQTTMessage message;
 
 	char payload[48];						// FIXME check we don't write too much
-	char topic[64];
+	char topic_pm[64];
+	char topic_st[64];
 	unsigned char sendbuf[80], readbuf[80] = { 0 };
 
 	int heap_size;
@@ -80,7 +82,7 @@ static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
 	os_printf("INFO: MQTT task start as we are connected\n");
 
 	heap_size = system_get_free_heap_size();
-	os_printf("DBG: Heap size = %d\n", heap_size);
+	os_printf("DBG: Heap size (mqtt) = %d\n", heap_size);
 	if (heap_size < 35000) {
 		os_printf("WARNING: heap size is low!");
 	}
@@ -110,22 +112,25 @@ static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
 
 #endif
 	// Generate topic for state
-	if (strlen(TOPIC_STATE)-2+strlen(this_device.mac) > sizeof(topic)-1) {
+	if (strlen(TOPIC_STATE) - 2 + strlen(this_device.mac) > sizeof(topic_st) - 1) {
 		os_printf("ERR: topic table (state) is too small!\n");
 		return;
 	}
-	sprintf(topic, TOPIC_STATE,this_device.mac);
+	sprintf(topic_st, TOPIC_STATE, this_device.mac);
+	sprintf(clientID, CLIENT_ID, this_device.mac);
 
 	connectData.MQTTVersion = 4;
-	connectData.clientID.cstring = this_device.mac;
+	connectData.clientID.cstring = clientID;
 	connectData.username.cstring = "use-token-auth";
 	connectData.password.cstring = this_device.token;
 	// LastWill
-	connectData.willFlag = 1;
-	connectData.will.qos = QOS2;
-	connectData.will.retained = 1;
-	connectData.will.message.cstring = "{\"state\": \"offline\"}";
-	connectData.will.topicName.cstring = topic;
+//	connectData.willFlag = 1;
+//	connectData.will.qos = QOS2;
+//	connectData.will.retained = 1;
+//	connectData.will.message.cstring = "{\"etat\": \"offline\"}";
+//	connectData.will.topicName.cstring = topic_st;
+
+	os_printf("DBG: client=%s token=%s\n", clientID, this_device.token);
 
 	if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 		os_printf("ERR: Return code from MQTTConnect is %d\n", rc);
@@ -137,20 +142,19 @@ static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
 	message.qos = QOS2;
 	message.retained = 1;
 	message.payload = payload;
-	sprintf(payload, "{\"state\": \"online\"}");
+	sprintf(payload, "{\"etat\": \"online\"}");
 	message.payloadlen = strlen(payload);
 
-	if ((rc = MQTTPublish(&client, topic, &message)) != 0) {
+	if ((rc = MQTTPublish(&client, topic_st, &message)) != 0) {
 		os_printf("Return code from MQTT publish is %d\n", rc);
-	} else {
-		os_printf("INFO: MQTT publish topic \"%s\", message is %s\n", topic, payload);
 	}
+	os_printf("INFO: MQTT publish topic \"%s\", message is %s\n", topic_st, payload);
 
-	if (strlen(TOPIC_PM)-2+strlen(this_device.mac) > sizeof(topic)-1) {
+	if (strlen(TOPIC_PM) - 2 + strlen(this_device.mac) > sizeof(topic_pm) - 1) {
 		os_printf("ERR: topic table (pm) is too small!\n");
 		return;
 	}
-	sprintf(topic, TOPIC_PM, this_device.mac);
+	sprintf(topic_pm, TOPIC_PM, this_device.mac);
 	while (1) {
 		struct mqtt_msg mqtt_pm;
 
@@ -163,11 +167,10 @@ static void IRAM_ATTR mqtt_client_thread(void* pvParameters)
 		sprintf(payload, "{\"pm2.5\": %d, \"pm10\": %d}", mqtt_pm.pm25, mqtt_pm.pm10);
 		message.payloadlen = strlen(payload);
 
-		if ((rc = MQTTPublish(&client, topic, &message)) != 0) {
+		if ((rc = MQTTPublish(&client, topic_pm, &message)) != 0) {
 			os_printf("Return code from MQTT publish is %d\n", rc);
-		} else {
-			os_printf("MQTT publish topic \"iot-2/evt/pm/fmt/json\", message is %s\n", payload);
 		}
+		os_printf("MQTT publish topic \"iot-2/evt/pm/fmt/json\", message is %s\n", payload);
 
 //		vTaskDelay(1000 / portTICK_RATE_MS);  //send every 1 seconds
 	}
