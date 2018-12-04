@@ -250,11 +250,13 @@ void task_main(void *param)
 			}
 		}
 		if (end) {
+			stnp_start();
+
 			// Start MQTT task
-			user_mqtt_init();
+//			user_mqtt_init();
 
 			// Start task sds011
-			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
+//			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);
 
 			// Stop this task
 			vTaskSuspend(xTaskGetCurrentTaskHandle());

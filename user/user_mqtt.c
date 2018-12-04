@@ -65,6 +65,7 @@ static void mqtt_client_thread(void* pvParameters)
 	int rc = 0;
 	char* address = MQTT_BROKER;
 	char clientID[32];						// FIXME check size if big enough
+	int time = 0;							// TODO time should be real NTP time
 
 	MQTTMessage message;
 
@@ -164,7 +165,7 @@ static void mqtt_client_thread(void* pvParameters)
 		message.qos = QOS2;
 		message.retained = 0;
 		message.payload = payload;
-		sprintf(payload, "{\"pm2.5\": %d, \"pm10\": %d}", mqtt_pm.pm25, mqtt_pm.pm10);
+		sprintf(payload, "{\"id\":%d,\"pm25\":%d,\"pm10\":%d}", time++, mqtt_pm.pm25, mqtt_pm.pm10);
 		message.payloadlen = strlen(payload);
 
 		if ((rc = MQTTPublish(&client, topic_pm, &message)) != 0) {
