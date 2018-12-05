@@ -31,7 +31,7 @@ void IRAM_ATTR stnp_start(void)
 	os_printf("INFO: SNTP init\n");
 	sntp_setoperatingmode(SNTP_OPMODE_POLL);
 	sntp_setservername(0, SNTP_SERVERS);
-	sntp_set_timezone(1);						// GMT + 1
+	sntp_set_timezone(0);						// UTC
 	sntp_init();
 
 	vTaskDelay(5000 / portTICK_RATE_MS);

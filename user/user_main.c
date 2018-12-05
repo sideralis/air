@@ -48,7 +48,7 @@
 #include "user_device.h"
 
 /* Defines */
-#define AIR_VERSION			"0.0.5 (" __DATE__ " " __TIME__ ")"
+#define AIR_VERSION			"0.0.6 (" __DATE__ " " __TIME__ ")"
 #define SERVER_LOCAL_PORT   80
 
 /* Prototypes */
@@ -253,7 +253,7 @@ void task_main(void *param)
 			stnp_start();
 
 			// Start MQTT task
-//			user_mqtt_init();
+			user_mqtt_init();
 
 			// Start task sds011
 			xTaskCreate(task_sds011, "sds011 driver", 256, NULL, 2, NULL);

@@ -112,7 +112,7 @@ int sm_data(int state, int bit, char *data)
 	return state;
 }
 
-int check_and_decode(uint8 *data, uint32 *pm25, uint32 *pm10, struct sds011_rx *data2)
+int check_and_decode(uint8 *data, struct sds011_rx *data2)
 {
 	int err;
 	uint8 checksum;
@@ -345,7 +345,7 @@ void task_sds011(void *param)
 
 	/* Send command */
 	os_printf("INFO: Sending commands working period to sds011\n");
-	sds011_data_write(sds011_working_period, sizeof(sds011_working_period));
+	sds011_data_write(sds011_working_period, sizeof(sds011_working_period));		// TODO send the command with a timer until we get an answer.
 
 	/* Enable GPIO interrupt */
 	ETS_GPIO_INTR_ENABLE();

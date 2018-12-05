@@ -36,6 +36,7 @@
 
 #include "lwip/netdb.h"
 #include "lwip/netif.h"
+#include "lwip/apps/sntp_time.h"
 #include "openssl/ssl.h"
 #include "MQTTFreeRTOS.h"
 
@@ -65,7 +66,7 @@ static void mqtt_client_thread(void* pvParameters)
 	int rc = 0;
 	char* address = MQTT_BROKER;
 	char clientID[32];						// FIXME check size if big enough
-	int time = 0;							// TODO time should be real NTP time
+	int time;								// TODO time should be real NTP time
 
 	MQTTMessage message;
 
@@ -124,6 +125,7 @@ static void mqtt_client_thread(void* pvParameters)
 	connectData.clientID.cstring = clientID;
 	connectData.username.cstring = "use-token-auth";
 	connectData.password.cstring = this_device.token;
+	connectData.keepAliveInterval = 120;				// FIXME should depend on sds011 configuration and should not be needed with MQTT_TASK
 	// LastWill
 //	connectData.willFlag = 1;
 //	connectData.will.qos = QOS2;
@@ -162,10 +164,14 @@ static void mqtt_client_thread(void* pvParameters)
 		// Wait for a new message
 		xQueueReceive(mqtt_msg_queue, &mqtt_pm, portMAX_DELAY);
 
+		struct timeval t;
+		gettimeofday(&t, NULL);
+		time = t.tv_sec/SECSPERMIN - 25733802;				// FIXME we should check that time is set
+
 		message.qos = QOS2;
 		message.retained = 0;
 		message.payload = payload;
-		sprintf(payload, "{\"id\":%d,\"pm25\":%d,\"pm10\":%d}", time++, mqtt_pm.pm25, mqtt_pm.pm10);
+		sprintf(payload, "{\"id\":%d,\"pm25\":%d,\"pm10\":%d}", time, mqtt_pm.pm25, mqtt_pm.pm10);
 		message.payloadlen = strlen(payload);
 
 		if ((rc = MQTTPublish(&client, topic_pm, &message)) != 0) {
