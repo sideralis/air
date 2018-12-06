@@ -49,8 +49,8 @@ ssl_ca_crt_key_t ssl_cck;
                                              ((ssl_ca_crt_key_t *)s)->key = e;\
                                              ((ssl_ca_crt_key_t *)s)->key_len = f;
 
-#define TOPIC_PM 		"iot-2/evt/%s_pm/fmt/json"						// TODO define as const to save space ?
-#define TOPIC_STATE		"iot-2/evt/%s_etat/fmt/json"
+#define TOPIC_PM 		"iot-2/evt/pm/fmt/json"						// TODO define as const to save space ?
+#define TOPIC_STATE		"iot-2/evt/etat/fmt/json"
 
 static xTaskHandle mqttc_client_handle;
 
@@ -114,26 +114,24 @@ static void mqtt_client_thread(void* pvParameters)
 
 #endif
 	// Generate topic for state
-	if (strlen(TOPIC_STATE) - 2 + strlen(this_device.mac) > sizeof(topic_st) - 1) {
+	if (strlen(TOPIC_STATE) > sizeof(topic_st) - 1) {
 		os_printf("ERR: topic table (state) is too small!\n");
 		return;
 	}
-	sprintf(topic_st, TOPIC_STATE, this_device.mac);
+	strcpy(topic_st, TOPIC_STATE);
 	sprintf(clientID, CLIENT_ID, this_device.mac);
 
 	connectData.MQTTVersion = 4;
 	connectData.clientID.cstring = clientID;
 	connectData.username.cstring = "use-token-auth";
 	connectData.password.cstring = this_device.token;
-	connectData.keepAliveInterval = 120;				// FIXME should depend on sds011 configuration and should not be needed with MQTT_TASK
+	connectData.keepAliveInterval = 600;				// FIXME should depend on sds011 configuration and should not be needed with MQTT_TASK. 120 is not enough in case we have a frame error.
 	// LastWill
 //	connectData.willFlag = 1;
 //	connectData.will.qos = QOS2;
 //	connectData.will.retained = 1;
 //	connectData.will.message.cstring = "{\"etat\": \"offline\"}";
 //	connectData.will.topicName.cstring = topic_st;
-
-	os_printf("DBG: client=%s token=%s\n", clientID, this_device.token);
 
 	if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 		os_printf("ERR: Return code from MQTTConnect is %d\n", rc);
@@ -153,11 +151,11 @@ static void mqtt_client_thread(void* pvParameters)
 	}
 	os_printf("INFO: MQTT publish topic \"%s\", message is %s\n", topic_st, payload);
 
-	if (strlen(TOPIC_PM) - 2 + strlen(this_device.mac) > sizeof(topic_pm) - 1) {
+	if (strlen(TOPIC_PM) > sizeof(topic_pm) - 1) {
 		os_printf("ERR: topic table (pm) is too small!\n");
 		return;
 	}
-	sprintf(topic_pm, TOPIC_PM, this_device.mac);
+	strcpy(topic_pm, TOPIC_PM);
 	while (1) {
 		struct mqtt_msg mqtt_pm;
 
@@ -176,6 +174,7 @@ static void mqtt_client_thread(void* pvParameters)
 
 		if ((rc = MQTTPublish(&client, topic_pm, &message)) != 0) {
 			os_printf("Return code from MQTT publish is %d\n", rc);
+			// FIXME if it does not work it may mean that we have to reconnect.
 		}
 		os_printf("MQTT publish topic \"iot-2/evt/pm/fmt/json\", message is %s\n", payload);
 

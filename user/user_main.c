@@ -48,7 +48,7 @@
 #include "user_device.h"
 
 /* Defines */
-#define AIR_VERSION			"0.0.6 (" __DATE__ " " __TIME__ ")"
+#define AIR_VERSION			"0.1.0 (" __DATE__ " " __TIME__ ")"
 #define SERVER_LOCAL_PORT   80
 
 /* Prototypes */
